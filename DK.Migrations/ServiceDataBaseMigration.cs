@@ -1,6 +1,4 @@
-﻿using Dakali;
-using ICR.DatabaseMigrations.Deployments._1_0_0;
-using Microsoft.Extensions.Configuration;
+﻿using ICR.DatabaseMigrations.Deployments._1_0_0;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -18,25 +16,30 @@ namespace DK.DatabaseMigrations
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             // Implement the logic to run the database migration here
-            var configuration = _serviceProvider.GetService<IConfiguration>();
             var logger = _serviceProvider.GetService<ILogger<ServiceDataBaseMigration>>();
-
+            var session = _serviceProvider.GetRequiredService<Dakali.Interface.Connection.ISession>();
+            
             logger.LogInformation("Starting database migration...");
-            ContextManager.OpenSession(configuration.GetSection("ConnectionStrings").GetSection("DefaultConnection").Value ?? string.Empty);
+            await session.BeginTransaction();
 
-            try {
-                new Release_1_0_0().Run();
-                await ContextManager.Session.Commit();
+            try
+            {
+                new Release_1_0_0(session).Run();
+                await session.Commit();
 
                 logger.LogInformation("Database migration completed successfully.");
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 logger.LogError(ex, "An error occurred.");
-                await ContextManager.Session.Rollback();
+                await session.Rollback();
 
                 throw;
+            }
+            finally
+            {
+                (session as IDisposable)?.Dispose();
             }
             
             await Task.CompletedTask;

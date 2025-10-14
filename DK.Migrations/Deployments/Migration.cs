@@ -1,17 +1,20 @@
-﻿namespace DK.DatabaseMigrations.Deployments
+﻿using Dakali.Domine.Connection;
+using Dakali.Interface.Connection;
+
+namespace DK.DatabaseMigrations.Deployments
 {
     public abstract class Migration : BaseMigration
     {
         public virtual string Summary { get; set; }
 
-        public Migration()
-            : base()
+        public Migration(ISession session)
+            : base(session)
         {
 
         }
 
-        public Migration(string sumary)
-            : base()
+        public Migration(ISession session, string sumary)
+            : this(session)
         {
             Summary = sumary;
         }

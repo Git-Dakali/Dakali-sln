@@ -13,7 +13,7 @@ namespace Dakali.Domine.Base
             IsDeleted = false;
         }
 
-        public long Id { get; set; }
+        
         public DateTime CreationDate { get; set; }
         public DateTime? RemoveDate { get; set; }
         public DateTime UpdateDate { get; set; }

@@ -1,4 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
+using Dakali.Domine.Connection;
+using Dakali.Interface.Connection;
 using DK.DatabaseMigrations;
 using ICR.DatabaseMigrations.Deployments._1_0_0;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,17 +18,14 @@ IHost host = Host.CreateDefaultBuilder(args)
     {
         LoggerProviderOptions.RegisterProviderOptions<EventLogSettings, EventLogLoggerProvider>(services);
 
-        #region Services for Hibernate
-
-        //interceptor = services.AddNHibernate(hostContext.Configuration["ConnectionStrings:DefaultConnection"]) as DependencyInjectionEntityInterceptor;
-        #endregion
-
         //USER DATA
         services.AddSingleton<ServiceDataBaseMigration>();
         services.AddHostedService<ServiceDataBaseMigration>();
+        services.AddScoped<IConnectionFactory, SqlConnectionFactory>();
+        services.AddScoped<ISession, Session>();
 
         #region Dependency Injection Runners
-        
+
         services.AddScoped(typeof(Release_1_0_0));
         #endregion
 

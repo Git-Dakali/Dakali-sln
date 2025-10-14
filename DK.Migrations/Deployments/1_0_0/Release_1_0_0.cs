@@ -1,10 +1,13 @@
-﻿using DK.DatabaseMigrations.Deployments;
+﻿using Dakali.Interface.Connection;
+using DK.DatabaseMigrations.Deployments;
 
 namespace ICR.DatabaseMigrations.Deployments._1_0_0
 {
     public class Release_1_0_0 : Migration
     {
-        public Release_1_0_0 () {
+        public Release_1_0_0 (ISession session) 
+            : base (session)
+        {
             SQLs.Add(@"
                 CREATE TABLE WebHookEvents (
                     Id bigint identity(1, 1),
