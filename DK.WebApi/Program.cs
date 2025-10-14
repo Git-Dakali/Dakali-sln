@@ -9,7 +9,7 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerDocument(settings =>
 {
-    settings.Title = "ICR Web API";
+    settings.Title = "Dakali Web API";
 });
 var app = builder.Build();
 
