@@ -1,6 +1,6 @@
 ﻿using Dakali.Interface.Connection;
 using Dapper;
-using DK.Model.Meta;
+using DK.Domain.Meta;
 using DK.Repositories.Interface.Meta;
 using System;
 using System.Collections.Generic;

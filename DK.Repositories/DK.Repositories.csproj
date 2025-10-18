@@ -10,6 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DK.Domain\DK.Domain.csproj" />
     <ProjectReference Include="..\DK.Repositories.Interface\DK.Repositories.Interface.csproj" />
     <ProjectReference Include="..\Libreria\Dakali\Dakali.csproj" />
   </ItemGroup>

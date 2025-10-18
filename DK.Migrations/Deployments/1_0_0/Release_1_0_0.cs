@@ -27,7 +27,7 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
         public void GetProductSQL()
         {
             SQLs.Add(@"
-                CREATE TABLE dbo.ProductCategory (
+                CREATE TABLE dbo.Category (
                   Id            BIGINT IDENTITY(1,1) PRIMARY KEY,
                   Code          NVARCHAR(64)  NOT NULL UNIQUE,
                   Name          NVARCHAR(200) NOT NULL,
@@ -56,12 +56,12 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
             ");
 
             SQLs.Add(@"
-                CREATE TABLE dbo.ProductModel (
+                CREATE TABLE dbo.Model (
                   Id            BIGINT IDENTITY(1,1) PRIMARY KEY,
                   Code          NVARCHAR(64) NOT NULL UNIQUE,
                   CategoryId    BIGINT NOT NULL
-                      CONSTRAINT FK_ProductModel_ProductCategory
-                      REFERENCES dbo.ProductCategory(Id),
+                      CONSTRAINT FK_Model_Category
+                      REFERENCES dbo.Category(Id),
                   CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
                   RemoveDate    DATETIME2 NULL,
                   UpdateDate    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
@@ -72,51 +72,64 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
             ");
 
             SQLs.Add(@"
-                CREATE TABLE dbo.ProductFieldGroup (
-                  Id            BIGINT IDENTITY(1,1) PRIMARY KEY,
-                  [Name]        NVARCHAR(200) NOT NULL,
-                  CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-                  RemoveDate    DATETIME2 NULL,
-                  UpdateDate    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-                  Version       BIGINT    NOT NULL DEFAULT 1,
-                  Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
-                  IsDeleted     BIT NOT NULL DEFAULT 0
+                CREATE TABLE dbo.FieldGroup (
+                    Id           BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_FieldGroup PRIMARY KEY,
+                    ModelId BIGINT NOT NULL,
+                    [Name]       NVARCHAR(150) NOT NULL,
+                    SortOrder    INT NOT NULL CONSTRAINT DF_FieldGroup_SortOrder DEFAULT (1),
+                    CreationDate DATETIME2(3) NOT NULL CONSTRAINT DF_FieldGroup_CreationDate DEFAULT (SYSUTCDATETIME()),
+                    UpdateDate   DATETIME2(3) NULL,
+                    RemoveDate   DATETIME2(3) NULL,
+                    [Version]    INT NOT NULL CONSTRAINT DF_FieldGroup_Version DEFAULT (1),
+                    [Guid]       UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_FieldGroup_Guid DEFAULT (NEWID()),
+                    IsDeleted    BIT NOT NULL CONSTRAINT DF_FieldGroup_IsDeleted DEFAULT (0),
+
+                    CONSTRAINT FK_FieldGroup_Model
+                        FOREIGN KEY (ModelId) REFERENCES dbo.Model(Id)
                 );
+            ");
+            SQLs.Add(@"
+                CREATE INDEX IX_FieldGroup_ModelId ON dbo.FieldGroup(ModelId);
+                
+                CREATE UNIQUE INDEX UX_FieldGroup_Model_Name
+                ON dbo.FieldGroup(ModelId, [Name])
+                WHERE IsDeleted = 0;
+                
             ");
 
             SQLs.Add(@"
-                CREATE TABLE dbo.ProductFieldGroupField (
+                CREATE TABLE dbo.Field (
                   Id                  BIGINT IDENTITY(1,1) PRIMARY KEY,
-                  ProductFieldGroupId BIGINT NOT NULL
-                      CONSTRAINT FK_ProductFieldGroupField_ProductFieldGroup
-                      REFERENCES dbo.ProductFieldGroup(Id),
+                  CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  RemoveDate    DATETIME2 NULL,
+                  UpdateDate    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  Version       BIGINT    NOT NULL DEFAULT 1,
+                  Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+                  IsDeleted     BIT NOT NULL DEFAULT 0,
+                  FieldGroupId BIGINT NOT NULL
+                      CONSTRAINT FK_Field_FieldGroup
+                      REFERENCES dbo.FieldGroup(Id),
                   [Name]              NVARCHAR(150) NOT NULL,
                   SortOrder           INT NOT NULL DEFAULT 1,
-                  CONSTRAINT UX_ProductFieldGroupField UNIQUE(ProductFieldGroupId, [Name])
+                  CONSTRAINT UX_Field UNIQUE(FieldGroupId, [Name])
                 );
 
             ");
             SQLs.Add(@"
-                CREATE TABLE dbo.ProductModelFieldGroup (
-                  ProductModelId      BIGINT NOT NULL
-                      CONSTRAINT FK_ProductModelFieldGroup_ProductModel
-                      REFERENCES dbo.ProductModel(Id),
-                  ProductFieldGroupId BIGINT NOT NULL
-                      CONSTRAINT FK_ProductModelFieldGroup_ProductFieldGroup
-                      REFERENCES dbo.ProductFieldGroup(Id),
-                  SortOrder           INT NOT NULL DEFAULT 1,
-                  CONSTRAINT PK_ProductModelFieldGroup PRIMARY KEY (ProductModelId, ProductFieldGroupId)
-                );
-            ");
-            SQLs.Add(@"
-                CREATE TABLE dbo.ProductModelSize (
+                CREATE TABLE dbo.Size (
                   Id             BIGINT IDENTITY(1,1) PRIMARY KEY,
-                  ProductModelId BIGINT NOT NULL
-                      CONSTRAINT FK_ProductModelSize_ProductModel
-                      REFERENCES dbo.ProductModel(Id),
+                  CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  RemoveDate    DATETIME2 NULL,
+                  UpdateDate    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  Version       BIGINT    NOT NULL DEFAULT 1,
+                  Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+                  IsDeleted     BIT NOT NULL DEFAULT 0,
+                  ModelId BIGINT NOT NULL
+                      CONSTRAINT FK_Size_Model
+                      REFERENCES dbo.Model(Id),
                   [Name]         NVARCHAR(50) NOT NULL,
                   SortOrder      INT NOT NULL DEFAULT 1,
-                  CONSTRAINT UX_ProductModelSize UNIQUE(ProductModelId, [Name])
+                  CONSTRAINT UX_Size UNIQUE(ModelId, [Name])
                 );
             ");
             SQLs.Add(@"
@@ -124,9 +137,9 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   Id            BIGINT IDENTITY(1,1) PRIMARY KEY,
                   [Name]        NVARCHAR(200) NOT NULL,
                   [Description] NVARCHAR(MAX) NULL,
-                  ProductModelId BIGINT NOT NULL
-                      CONSTRAINT FK_Product_ProductModel
-                      REFERENCES dbo.ProductModel(Id),
+                  ModelId BIGINT NOT NULL
+                      CONSTRAINT FK_Product_Model
+                      REFERENCES dbo.Model(Id),
                   CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
                   RemoveDate    DATETIME2 NULL,
                   UpdateDate    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
@@ -135,14 +148,14 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   IsDeleted     BIT NOT NULL DEFAULT 0
                 );
 
-                CREATE INDEX IX_Product_ProductModelId ON dbo.Product(ProductModelId);
+                CREATE INDEX IX_Product_ModelId ON dbo.Product(ModelId);
                 CREATE INDEX IX_Product_IsDeleted     ON dbo.Product(IsDeleted);
             ");
             SQLs.Add(@"
-                CREATE TABLE dbo.ProductVariant (
+                CREATE TABLE dbo.Variant (
                   Id            BIGINT IDENTITY(1,1) PRIMARY KEY,
                   ProductId     BIGINT NOT NULL
-                      CONSTRAINT FK_ProductVariant_Product
+                      CONSTRAINT FK_Variant_Product
                       REFERENCES dbo.Product(Id),
                   [Size]        NVARCHAR(50)  NOT NULL,
                   Cost          DECIMAL(18,2) NOT NULL DEFAULT 0,
@@ -154,28 +167,34 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   IsDeleted     BIT NOT NULL DEFAULT 0
                 );
 
-                CREATE INDEX IX_ProductVariant_ProductId ON dbo.ProductVariant(ProductId);
-                CREATE INDEX IX_ProductVariant_Size      ON dbo.ProductVariant([Size]);
+                CREATE INDEX IX_Variant_ProductId ON dbo.Variant(ProductId);
+                CREATE INDEX IX_Variant_Size      ON dbo.Variant([Size]);
             ");
             SQLs.Add(@"
-                CREATE TABLE dbo.ProductVariantColor (
+                CREATE TABLE dbo.Color (
                   Id          BIGINT IDENTITY(1,1) PRIMARY KEY,
-                  VariantId   BIGINT NOT NULL
-                      CONSTRAINT FK_ProductVariantColor_ProductVariant
-                      REFERENCES dbo.ProductVariant(Id),
+                  CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  RemoveDate    DATETIME2 NULL,
+                  UpdateDate    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  Version       BIGINT    NOT NULL DEFAULT 1,
+                  Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+                  IsDeleted     BIT NOT NULL DEFAULT 0,
+                  VariantId     BIGINT NOT NULL
+                      CONSTRAINT FK_Color_Variant
+                      REFERENCES dbo.Variant(Id),
                   Hex         NVARCHAR(16) NOT NULL,   -- ej: ""#000000""
                   SortOrder   INT NOT NULL DEFAULT 1,
-                  CONSTRAINT UX_ProductVariantColor UNIQUE(VariantId, Hex)
+                  CONSTRAINT UX_Color UNIQUE(VariantId, Hex)
                 );
             ");
             SQLs.Add(@"
-                CREATE TABLE dbo.ProductImage (
+                CREATE TABLE dbo.Image (
                   Id            BIGINT IDENTITY(1,1) PRIMARY KEY,
                   VariantId     BIGINT NOT NULL
-                      CONSTRAINT FK_ProductImage_ProductVariant
-                      REFERENCES dbo.ProductVariant(Id),
+                      CONSTRAINT FK_Image_Variant
+                      REFERENCES dbo.Variant(Id),
                   StoredFileId  BIGINT NOT NULL
-                      CONSTRAINT FK_ProductImage_StoredFile
+                      CONSTRAINT FK_Image_StoredFile
                       REFERENCES dbo.StoredFile(Id),
                   IsPrimary     BIT NOT NULL DEFAULT 0,
                   SortOrder     INT NOT NULL DEFAULT 1,
@@ -187,19 +206,19 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   IsDeleted     BIT NOT NULL DEFAULT 0
                 );
 
-                CREATE UNIQUE INDEX UX_ProductImage_Primary
-                  ON dbo.ProductImage(VariantId, IsPrimary)
+                CREATE UNIQUE INDEX UX_Image_Primary
+                  ON dbo.Image(VariantId, IsPrimary)
                   WHERE IsPrimary = 1;
 
-                CREATE INDEX IX_ProductImage_StoredFileId ON dbo.ProductImage(StoredFileId);
-                CREATE INDEX IX_ProductImage_VariantId    ON dbo.ProductImage(VariantId);
+                CREATE INDEX IX_Image_StoredFileId ON dbo.Image(StoredFileId);
+                CREATE INDEX IX_Image_VariantId    ON dbo.Image(VariantId);
             ");
             SQLs.Add(@"
-                CREATE TABLE dbo.ProductAttribute (
+                CREATE TABLE dbo.Attribute (
                   Id            BIGINT IDENTITY(1,1) PRIMARY KEY,
                   VariantId     BIGINT NOT NULL
-                      CONSTRAINT FK_ProductAttribute_ProductVariant
-                      REFERENCES dbo.ProductVariant(Id),
+                      CONSTRAINT FK_Attribute_Variant
+                      REFERENCES dbo.Variant(Id),
                   [Field]       NVARCHAR(150)  NOT NULL,
                   [Value]       NVARCHAR(4000) NOT NULL,
                   CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
@@ -210,8 +229,8 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   IsDeleted     BIT NOT NULL DEFAULT 0
                 );
 
-                CREATE INDEX IX_ProductAttribute_VariantId ON dbo.ProductAttribute(VariantId);
-                CREATE INDEX IX_ProductAttribute_Field     ON dbo.ProductAttribute([Field]);
+                CREATE INDEX IX_Attribute_VariantId ON dbo.Attribute(VariantId);
+                CREATE INDEX IX_Attribute_Field     ON dbo.Attribute([Field]);
             ");
         }
     }

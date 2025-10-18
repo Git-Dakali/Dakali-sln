@@ -19,7 +19,7 @@ builder.Services.AddSwaggerDocument(settings =>
 builder.Services.AddScoped<IConnectionFactory, SqlConnectionFactory>();
 builder.Services.AddScoped<Dakali.Interface.Connection.ISession, Session>();
 
-builder.Services.AddScoped<ProductCategoryRepository>();
+builder.Services.AddScoped<CategoryRepository>();
 
 
 var app = builder.Build();

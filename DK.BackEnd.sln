@@ -5,7 +5,7 @@ VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DK.WebApi", "DK.WebApi\DK.WebApi.csproj", "{415A0270-70FE-42C2-8398-1949F4D492B7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DK.Model", "DK.Model\DK.Model.csproj", "{F67DB502-BBD4-4D9F-BF62-632CAD3AFD0C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DK.Domain", "DK.Domain\DK.Domain.csproj", "{F67DB502-BBD4-4D9F-BF62-632CAD3AFD0C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DK.DatabaseMigrations", "DK.Migrations\DK.DatabaseMigrations.csproj", "{CC1BA0D6-E91B-4DC5-A7D6-51AC40C88A1E}"
 EndProject

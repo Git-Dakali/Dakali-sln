@@ -1,8 +1,6 @@
-﻿using Dakali;
-using DK.Model;
+﻿using DK.Domain.Products;
 using DK.Repositories;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 
 namespace DK.WebApi.Controllers
 {
@@ -11,28 +9,28 @@ namespace DK.WebApi.Controllers
     public class ProductCategoryController : ControllerBase
     {
         [HttpGet("Get")]
-        public async Task<ProductCategory> Get([FromQuery(Name = "Id")] long id, [FromServices] ProductCategoryRepository categoryRepository)
+        public async Task<Category> Get([FromQuery(Name = "Id")] long id, [FromServices] CategoryRepository categoryRepository)
         {
             var category = await categoryRepository.Get(id);
             return category;
         }
 
         [HttpPost("Create")]
-        public async Task<ProductCategory> Create([FromServices] ProductCategoryRepository categoryRepository, [FromBody] ProductCategory data)
+        public async Task<Category> Create([FromServices] CategoryRepository categoryRepository, [FromBody] Category data)
         {
             var category = await categoryRepository.Create(data);
             return category;
         }
 
         [HttpPost("Update")]
-        public async Task<ProductCategory> Update([FromServices] ProductCategoryRepository categoryRepository, [FromBody] ProductCategory data)
+        public async Task<Category> Update([FromServices] CategoryRepository categoryRepository, [FromBody] Category data)
         {
             var category = await categoryRepository.Update(data);
             return category;
         }
 
         [HttpPost("Delete")]
-        public async Task Delete([FromServices] ProductCategoryRepository categoryRepository, [FromBody] ProductCategory data)
+        public async Task Delete([FromServices] CategoryRepository categoryRepository, [FromBody] Category data)
         {
             await categoryRepository.Delete(data);
         }

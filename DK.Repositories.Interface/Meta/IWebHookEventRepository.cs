@@ -1,4 +1,4 @@
-﻿using DK.Model.Meta;
+﻿using DK.Domain.Meta;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
