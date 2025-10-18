@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DK.Repositories
+namespace DK.Repositories.Products
 {
     public class VariantRepository : RepositoryReferenceEntity<Product, Variant>
     {

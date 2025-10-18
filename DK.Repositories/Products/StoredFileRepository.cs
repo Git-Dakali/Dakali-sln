@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DK.Repositories
+namespace DK.Repositories.Products
 {
     public class StoredFileRepository : IRepository<StoredFile>
     {

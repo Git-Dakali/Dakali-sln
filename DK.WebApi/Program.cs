@@ -2,7 +2,6 @@ using Dakali.Domine.Connection;
 using Dakali.Interface.Connection;
 using DK.Repositories;
 using DK.WebApi.Middleware;
-using YamlDotNet.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +18,7 @@ builder.Services.AddSwaggerDocument(settings =>
 builder.Services.AddScoped<IConnectionFactory, SqlConnectionFactory>();
 builder.Services.AddScoped<Dakali.Interface.Connection.ISession, Session>();
 
-builder.Services.AddScoped<CategoryRepository>();
+DependencyInjectionRepository.Configure(builder.Services);
 
 
 var app = builder.Build();

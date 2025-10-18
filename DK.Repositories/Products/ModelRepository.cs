@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DK.Repositories
+namespace DK.Repositories.Products
 {
     public class ModelRepository : IRepository<Model>
     {
@@ -91,7 +91,7 @@ namespace DK.Repositories
             await _session.Connection.QuerySingleAsync<Model>(query, new { CategoryId = entity.Category.Id}, transaction: _session.Transaction);
             await _fieldGroupRepository.SyncCollection(entity, entity.FieldGroups, cancellation);
             
-            return (await Get(entity.Id, cancellation)) ?? throw new KeyNotFoundException($"Model {entity.Code}-{entity.Category.Name} no encontrado para actualizar.");
+            return await Get(entity.Id, cancellation) ?? throw new KeyNotFoundException($"Model {entity.Code}-{entity.Category.Name} no encontrado para actualizar.");
         }
     }
 }

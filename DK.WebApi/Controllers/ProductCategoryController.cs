@@ -1,5 +1,5 @@
 ﻿using DK.Domain.Products;
-using DK.Repositories;
+using DK.Repositories.Products;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DK.WebApi.Controllers
