@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DK.Domain\DK.Domain.csproj" />
+    <ProjectReference Include="..\DK.Repositories\DK.Repositories.csproj" />
+    <ProjectReference Include="..\DK.Validator\DK.Validator.csproj" />
+  </ItemGroup>
+
+</Project>

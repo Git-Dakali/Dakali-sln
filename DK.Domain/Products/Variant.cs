@@ -3,17 +3,17 @@ using System.Collections.Generic;
 
 namespace DK.Domain.Products
 {
-    public class Variant : Entity
+    public class Variant : EntityGuid
     {
         public string Size { get; set; }
         public decimal Cost { get; set; }
-        public IList<Color> ColorHex { get; set; }
+        public IList<Color> ColorsHex { get; set; }
         public IList<Image> Images { get; set; }
         public IList<Attribute> Attributes { get; set; }
 
         public Variant()
         {
-            ColorHex = new List<Color>();
+            ColorsHex = new List<Color>();
             Attributes = new List<Attribute>();
             Images = new List<Image>();
         }

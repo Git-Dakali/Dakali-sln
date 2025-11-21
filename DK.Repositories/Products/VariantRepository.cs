@@ -107,7 +107,7 @@ namespace DK.Repositories.Products
         public override bool HasChanges(Variant entity, Variant persited)
         {
             return entity.Id != persited.Id ||
-                entity.ColorHex != persited.ColorHex ||
+                entity.ColorsHex != persited.ColorsHex ||
                 entity.Cost != persited.Cost;
         }
 

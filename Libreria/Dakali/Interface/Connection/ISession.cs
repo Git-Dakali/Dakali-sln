@@ -1,10 +1,11 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dakali.Interface.Connection
 {
-    public interface ISession
+    public interface ISession: IDisposable
     {
         IDbConnection Connection { get; }
         IDbTransaction? Transaction { get; }

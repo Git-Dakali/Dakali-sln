@@ -20,7 +20,7 @@ namespace DK.Repositories.Products
 
         public async override Task<IEnumerable<Field>> Get(FieldGroup fieldGroup, CancellationToken cancellation = default)
         {
-            var sql = @"SELECT * FROM Field WHERE FieldGroupId = @FieldGroupId AND IsDeleted = 0; ORDER BY SortOrder, Id;";
+            var sql = @"SELECT * FROM Field WHERE FieldGroupId = @FieldGroupId AND IsDeleted = 0 ORDER BY SortOrder, Id;";
 
             return (await _session.Connection.QueryAsync<Field>(new CommandDefinition(sql, new { FieldGroupId = fieldGroup.Id }, _session.Transaction, cancellationToken: cancellation))).ToList();
         }
@@ -74,7 +74,7 @@ namespace DK.Repositories.Products
                 OUTPUT INSERTED.*
                 VALUES(@FieldGroupId, @Name, @SortOrder);";
 
-            return await _session.Connection.QuerySingleAsync(new CommandDefinition(sql, new { FieldGroupId = parent.Id, entity.Name, entity.SortOrder }, _session.Transaction, cancellationToken: cancellation));
+            return await _session.Connection.QuerySingleAsync<Field>(new CommandDefinition(sql, new { FieldGroupId = parent.Id, entity.Name, entity.SortOrder }, _session.Transaction, cancellationToken: cancellation));
         }
 
         public async override Task<Field> Update(FieldGroup parent, Field entity, CancellationToken cancellation = default)

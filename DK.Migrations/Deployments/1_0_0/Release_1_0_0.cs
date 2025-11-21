@@ -128,8 +128,7 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                       CONSTRAINT FK_Size_Model
                       REFERENCES dbo.Model(Id),
                   [Name]         NVARCHAR(50) NOT NULL,
-                  SortOrder      INT NOT NULL DEFAULT 1,
-                  CONSTRAINT UX_Size UNIQUE(ModelId, [Name])
+                  SortOrder      INT NOT NULL DEFAULT 1
                 );
             ");
             SQLs.Add(@"
@@ -182,7 +181,8 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   VariantId     BIGINT NOT NULL
                       CONSTRAINT FK_Color_Variant
                       REFERENCES dbo.Variant(Id),
-                  Hex         NVARCHAR(16) NOT NULL,   -- ej: ""#000000""
+                  Name          NVARCHAR(500) NOT NULL,
+                  Hex           NVARCHAR(16) NOT NULL,   
                   SortOrder   INT NOT NULL DEFAULT 1,
                   CONSTRAINT UX_Color UNIQUE(VariantId, Hex)
                 );

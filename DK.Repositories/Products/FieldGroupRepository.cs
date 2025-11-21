@@ -22,10 +22,10 @@ namespace DK.Repositories.Products
         public override async Task<IEnumerable<FieldGroup>> Get(Model parent, CancellationToken cancellation = default)
         {
             const string sql = @"
-                SELECT Id, [Name], ProductModelId, SortOrder,
+                SELECT Id, [Name], ModelId, SortOrder,
                        CreationDate, UpdateDate, RemoveDate, Version, Guid, IsDeleted
                   FROM dbo.FieldGroup
-                 WHERE ProductModelId = @ModelId AND IsDeleted = 0
+                 WHERE ModelId = @ModelId AND IsDeleted = 0
                  ORDER BY SortOrder, Id;";
 
             var groups = await _session.Connection.QueryAsync<FieldGroup>(
@@ -40,10 +40,10 @@ namespace DK.Repositories.Products
         public override async Task<FieldGroup> Get(Model parent, long id, CancellationToken cancellation = default)
         {
             const string sql = @"
-                SELECT Id, [Name], ProductModelId, SortOrder,
+                SELECT Id, [Name], ModelId, SortOrder,
                        CreationDate, UpdateDate, RemoveDate, Version, Guid, IsDeleted
                   FROM dbo.FieldGroup
-                 WHERE Id = @Id AND ProductModelId = @ModelId AND IsDeleted = 0;";
+                 WHERE Id = @Id AND ModelId = @ModelId AND IsDeleted = 0;";
 
             var entity = await _session.Connection.QuerySingleOrDefaultAsync<FieldGroup>(
                 new CommandDefinition(sql, new { Id = id, ModelId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
@@ -57,8 +57,8 @@ namespace DK.Repositories.Products
         public override async Task<FieldGroup> Create(Model parent, FieldGroup entity, CancellationToken cancellation = default)
         {
             const string sql = @"
-                INSERT INTO dbo.FieldGroup (ProductModelId, [Name], SortOrder)
-                OUTPUT INSERTED.Id, INSERTED.[Name], INSERTED.ProductModelId, INSERTED.SortOrder,
+                INSERT INTO dbo.FieldGroup (ModelId, [Name], SortOrder)
+                OUTPUT INSERTED.Id, INSERTED.[Name], INSERTED.ModelId, INSERTED.SortOrder,
                        INSERTED.CreationDate, INSERTED.UpdateDate, INSERTED.RemoveDate, INSERTED.Version, INSERTED.Guid, INSERTED.IsDeleted
                 VALUES (@ModelId, @Name, @SortOrder);";
 
@@ -78,9 +78,9 @@ namespace DK.Repositories.Products
                        SortOrder  = @SortOrder,
                        UpdateDate = SYSUTCDATETIME(),
                        Version    = Version + 1
-                OUTPUT INSERTED.Id, INSERTED.[Name], INSERTED.ProductModelId, INSERTED.SortOrder,
+                OUTPUT INSERTED.Id, INSERTED.[Name], INSERTED.ModelId, INSERTED.SortOrder,
                        INSERTED.CreationDate, INSERTED.UpdateDate, INSERTED.RemoveDate, INSERTED.Version, INSERTED.Guid, INSERTED.IsDeleted
-                 WHERE Id = @Id AND ProductModelId = @ModelId AND IsDeleted = 0;";
+                 WHERE Id = @Id AND ModelId = @ModelId AND IsDeleted = 0;";
 
             var updated = await _session.Connection.QuerySingleOrDefaultAsync<FieldGroup>(
                 new CommandDefinition(sql, new { entity.Id, ModelId = parent.Id, entity.Name, entity.SortOrder }, _session.Transaction, cancellationToken: cancellation));
@@ -100,7 +100,7 @@ namespace DK.Repositories.Products
                        RemoveDate = SYSUTCDATETIME(),
                        UpdateDate = SYSUTCDATETIME(),
                        Version    = Version + 1
-                 WHERE Id = @Id AND ProductModelId = @ModelId AND IsDeleted = 0;";
+                 WHERE Id = @Id AND ModelId = @ModelId AND IsDeleted = 0;";
 
             await _session.Connection.ExecuteAsync(
                 new CommandDefinition(sql, new { entity.Id, ModelId = parent.Id }, _session.Transaction, cancellationToken: cancellation));

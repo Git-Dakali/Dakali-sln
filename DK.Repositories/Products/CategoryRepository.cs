@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DK.Repositories.Products
 {
-    public class CategoryRepository : IRepository<Category>
+    public class CategoryRepository : IRepositoryCode<Category>
     {
         private ISession _session;
         public CategoryRepository(ISession session)
@@ -16,10 +16,22 @@ namespace DK.Repositories.Products
             _session = session;
         }
 
+        public async Task<IEnumerable<Category>> GetAll(CancellationToken cancellation = default)
+        {
+            var query = "select * from dbo.Category where IsDeleted = 0";
+            return await _session.Connection.QueryAsync<Category>(query, new { }, transaction: _session.Transaction);
+        }
+
         public async Task<Category> Get(long id, CancellationToken cancellation = default)
         {
             var query = "select * from dbo.Category where IsDeleted = 0 AND Id = @Id";
             return await _session.Connection.QuerySingleOrDefaultAsync<Category>(query, new { Id = id }, transaction: _session.Transaction);
+        }
+
+        public async Task<Category> Get(string code, CancellationToken cancellation = default)
+        {
+            var query = "select * from dbo.Category where IsDeleted = 0 AND Code = @Code";
+            return await _session.Connection.QuerySingleOrDefaultAsync<Category>(query, new { Code = code }, transaction: _session.Transaction);
         }
 
         public async Task<Category> Create(Category Category, CancellationToken cancellation = default)

@@ -7,8 +7,7 @@ using System.Threading.Tasks;
 
 namespace DK.Repositories.Base
 {
-    public abstract class RepositoryReferenceEntity<Parent, Child>
-        : IRepositoryReferenceEntity<Parent, Child>
+    public abstract class RepositoryReferenceEntity<Parent, Child> : IRepositoryReferenceEntity<Parent, Child>
          where Parent : IEntity
         where Child : IEntity
     {
@@ -22,8 +21,6 @@ namespace DK.Repositories.Base
 
         public async Task<IEnumerable<Child>> SyncCollection(Parent parent, IEnumerable<Child> entities, CancellationToken cancellation = default)
         {
-            if (entities is null || !entities.Any())
-                return Enumerable.Empty<Child>();
 
             var listPersisted = await Get(parent, cancellation);
             foreach (var persisted in listPersisted)

@@ -24,7 +24,7 @@ namespace DK.Repositories.Products
                 OUTPUT INSERTED.*
                 VALUES(@ModelId, @Name, @SortOrder);";
 
-            return await _session.Connection.QuerySingleAsync(new CommandDefinition(sql, new { ModelId = parent.Id, entity.Name, entity.SortOrder }, _session.Transaction, cancellationToken: cancellation));
+            return await _session.Connection.QuerySingleAsync<Size>(new CommandDefinition(sql, new { ModelId = parent.Id, entity.Name, entity.SortOrder }, _session.Transaction, cancellationToken: cancellation));
         }
 
         public async override Task Delete(Model parent, Size entity, CancellationToken cancellation = default)
@@ -64,7 +64,7 @@ namespace DK.Repositories.Products
 
         public async override Task<IEnumerable<Size>> Get(Model parent, CancellationToken cancellation = default)
         {
-            var sql = @"SELECT * FROM Size WHERE ModelId = @ModelId AND IsDeleted = 0; ORDER BY SortOrder, Id;";
+            var sql = @"SELECT * FROM Size WHERE ModelId = @ModelId AND IsDeleted = 0 ORDER BY SortOrder, Id;";
 
             return await _session.Connection.QueryAsync<Size>(new CommandDefinition(sql, new { ModelId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
         }
@@ -81,7 +81,7 @@ namespace DK.Repositories.Products
             const string sql = @"
                 UPDATE dbo.Size
                    SET Name      = @Name,
-                       SortOrder   = @SortOrder
+                       SortOrder   = @SortOrder,
                        UpdateDate  = SYSUTCDATETIME(),
                        Version     = Version + 1
                 OUTPUT INSERTED.*

@@ -17,6 +17,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libreria", "Libreria", "{02
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dakali", "Libreria\Dakali\Dakali.csproj", "{F845A301-2D22-47F1-023E-58F3172FF823}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DK.Process", "DK.Process\DK.Process.csproj", "{CF10100E-DCDC-43AD-944A-C037C27097BF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DK.Validator", "DK.Validator\DK.Validator.csproj", "{8DC0C573-7559-4132-86F7-E39277374776}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +51,14 @@ Global
 		{F845A301-2D22-47F1-023E-58F3172FF823}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F845A301-2D22-47F1-023E-58F3172FF823}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F845A301-2D22-47F1-023E-58F3172FF823}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF10100E-DCDC-43AD-944A-C037C27097BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF10100E-DCDC-43AD-944A-C037C27097BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF10100E-DCDC-43AD-944A-C037C27097BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF10100E-DCDC-43AD-944A-C037C27097BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8DC0C573-7559-4132-86F7-E39277374776}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DC0C573-7559-4132-86F7-E39277374776}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DC0C573-7559-4132-86F7-E39277374776}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DC0C573-7559-4132-86F7-E39277374776}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
