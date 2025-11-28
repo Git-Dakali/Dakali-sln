@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DK.Repositories.Products
 {
-    public class AttributeRepository : RepositoryReferenceEntity<Variant, Attribute>
+    public class AttributeRepository : RepositoryReferenceEntity<AttributeGroup, Attribute>
     {
         private readonly ISession _session;
 
@@ -17,20 +17,21 @@ namespace DK.Repositories.Products
             _session = session;
         }
 
-        public override async Task<Attribute> Create(Variant parent, Attribute entity, CancellationToken cancellation = default)
+        public override async Task<Attribute> Create(AttributeGroup parent, Attribute entity, CancellationToken cancellation = default)
         {
             const string sql = @"
-                INSERT INTO dbo.Attribute (VariantId, [Field], [Value])
+                INSERT INTO dbo.Attribute (AttributeGroupId, [Field], [Value], SearchString)
                 OUTPUT INSERTED.Id, INSERTED.[Field], INSERTED.[Value],
-                    INSERTED.CreationDate, INSERTED.UpdateDate, INSERTED.RemoveDate,
+                    INSERTED.SearchString, INSERTED.CreationDate, INSERTED.UpdateDate, INSERTED.RemoveDate,
                     INSERTED.Version, INSERTED.Guid, INSERTED.IsDeleted
-                VALUES (@VariantId, @Field, @Value);";
+                VALUES (@AttributeGroupId, @Field, @Value, @SearchString);";
 
+            entity.SearchString = entity.ToString();
             return await _session.Connection.QuerySingleAsync<Attribute>(
-                new CommandDefinition(sql, new { VariantId = parent.Id, entity.Field, entity.Value }, _session.Transaction, cancellationToken: cancellation));
+                new CommandDefinition(sql, new { AttributeGroupId = parent.Id, entity.Field, entity.Value, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
         }
 
-        public override async Task Delete(Variant parent, Attribute entity, CancellationToken cancellation = default)
+        public override async Task Delete(AttributeGroup parent, Attribute entity, CancellationToken cancellation = default)
         {
             const string sql = @"
                 UPDATE dbo.Attribute
@@ -38,13 +39,13 @@ namespace DK.Repositories.Products
                        RemoveDate = SYSUTCDATETIME(),
                        UpdateDate = SYSUTCDATETIME(),
                        Version = Version + 1
-                 WHERE Id = @Id AND VariantId = @VariantId AND IsDeleted = 0;";
+                 WHERE Id = @Id AND AttributeGroupId = @AttributeGroupId AND IsDeleted = 0;";
 
             await _session.Connection.ExecuteAsync(
-                new CommandDefinition(sql, new { entity.Id, VariantId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
+                new CommandDefinition(sql, new { entity.Id, AttributeGroupId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
         }
 
-        public override async Task Delete(Variant parent, IEnumerable<Attribute> entities, CancellationToken cancellation = default)
+        public override async Task Delete(AttributeGroup parent, IEnumerable<Attribute> entities, CancellationToken cancellation = default)
         {
             if (entities is null)
                 return;
@@ -53,51 +54,53 @@ namespace DK.Repositories.Products
                 await Delete(parent, entity, cancellation);
         }   
 
-        public override async Task<Attribute?> Get(Variant parent, long id, CancellationToken cancellation = default)
+        public override async Task<Attribute?> Get(AttributeGroup parent, long id, CancellationToken cancellation = default)
         {
             const string sql = @"
                 SELECT Id, [Field], [Value],
-                    CreationDate, UpdateDate, RemoveDate, Version, Guid, IsDeleted
+                    SearchString, CreationDate, UpdateDate, RemoveDate, Version, Guid, IsDeleted
                 FROM dbo.Attribute
-                WHERE  Id = @Id AND VariantId = @VariantId AND IsDeleted = 0";
+                WHERE  Id = @Id AND AttributeGroupId = @AttributeGroupId AND IsDeleted = 0";
 
             return await _session.Connection.QuerySingleOrDefaultAsync<Attribute>(
-                new CommandDefinition(sql, new { Id = id, VariantId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
+                new CommandDefinition(sql, new { Id = id, AttributeGroupId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
         }
 
-        public override async Task<IEnumerable<Attribute>> Get(Variant parent, CancellationToken cancellation = default)
+        public override async Task<IEnumerable<Attribute>> Get(AttributeGroup parent, CancellationToken cancellation = default)
         {
             const string sql = @"
                 SELECT Id, [Field], [Value],
-                    CreationDate, UpdateDate, RemoveDate, Version, Guid, IsDeleted
+                    SearchString, CreationDate, UpdateDate, RemoveDate, Version, Guid, IsDeleted
                 FROM dbo.Attribute
-                WHERE VariantId = @VariantId AND IsDeleted = 0
+                WHERE AttributeGroupId = @AttributeGroupId AND IsDeleted = 0
                 ORDER BY Id;";
 
             return await _session.Connection.QueryAsync<Attribute>(
-                new CommandDefinition(sql, new { VariantId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
+                new CommandDefinition(sql, new { AttributeGroupId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
         }
 
-        public override async Task<Attribute> Update(Variant parent, Attribute entity, CancellationToken cancellation = default)
+        public override async Task<Attribute> Update(AttributeGroup parent, Attribute entity, CancellationToken cancellation = default)
         {
             const string sql = @"
                 UPDATE dbo.Attribute
                     SET [Field] = @Field,
                        [Value] = @Value,
+                       SearchString = @SearchString,
                        UpdateDate = SYSUTCDATETIME(),
                        Version = Version + 1
                 OUTPUT INSERTED.Id, INSERTED.[Field], INSERTED.[Value],
                        INSERTED.CreationDate, INSERTED.UpdateDate, INSERTED.RemoveDate,
                        INSERTED.Version, INSERTED.Guid, INSERTED.IsDeleted
-                 WHERE Id = @Id AND VariantId = @VariantId AND IsDeleted = 0;";
+                 WHERE Id = @Id AND AttributeGroupId = @AttributeGroupId AND IsDeleted = 0;";
 
+            entity.SearchString = entity.ToString();
             var updated = await _session.Connection.QuerySingleOrDefaultAsync<Attribute>(
                 new CommandDefinition(sql,
-                    new { entity.Id, VariantId = parent.Id, entity.Field, entity.Value },
+                    new { entity.Id, AttributeGroupId = parent.Id, entity.Field, entity.Value, entity.SearchString },
                     _session.Transaction,
                     cancellationToken: cancellation));
 
-            return updated ?? throw new KeyNotFoundException($"El attributo {entity.Id}-{entity.Field} no encontrado para la Variante {parent}-{parent.Size}.");
+            return updated ?? throw new KeyNotFoundException($"El attributo {entity.Id}-{entity.Field} no encontrado para el grupo {parent.Id}-{parent.Name}.");
         }
 
         public override bool HasChanges(Attribute entity, Attribute persited)

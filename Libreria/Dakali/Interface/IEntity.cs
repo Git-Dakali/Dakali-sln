@@ -4,6 +4,6 @@
     {
         long Id { get; set; }
         
-        string SearchString { get; }
+        string SearchString { get; set; }
     }
 }

@@ -8,27 +8,28 @@ using System.Threading.Tasks;
 
 namespace DK.Repositories.Products
 {
-    public class ImageRepository : RepositoryReferenceEntity<Variant, Image>
+    public class ColorImageRepository : RepositoryReferenceEntity<Color, Image>
     {
 
         private readonly ISession _session;
         private readonly StoredFileRepository _storedFileRepository;
 
-        public ImageRepository(ISession session, StoredFileRepository storedFileRepository)
+        public ColorImageRepository(ISession session, StoredFileRepository storedFileRepository)
         {
             _session = session;
             _storedFileRepository = storedFileRepository;
         }
 
-        public override async Task<Image> Get(Variant parent, long id, CancellationToken cancellation = default)
+        public override async Task<Image> Get(Color parent, long id, CancellationToken cancellation = default)
         {
             const string sql = @"
                 SELECT 
                     Id, 
-                    VariantId, 
+                    ColorId, 
                     StoredFileId, 
                     IsPrimary, 
                     SortOrder,
+                    SearchString,
                     CreationDate, 
                     UpdateDate, 
                     RemoveDate, 
@@ -36,11 +37,11 @@ namespace DK.Repositories.Products
                     Guid, 
                     IsDeleted
                 FROM dbo.Image
-                WHERE Id = @Id AND VariantId = @VariantId AND IsDeleted = 0;";
+                WHERE Id = @Id AND ColorId = @ColorId AND IsDeleted = 0;";
 
             
             var row = await _session.Connection.QuerySingleOrDefaultAsync<dynamic>(
-                new CommandDefinition(sql, new { Id = id, VariantId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
+                new CommandDefinition(sql, new { Id = id, ColorId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
 
             if (row is null)
                 return null;
@@ -51,6 +52,7 @@ namespace DK.Repositories.Products
             {
                 Id = (long)row.Id,
                 Guid = row.Guid,
+                SearchString = row.SearchString,
                 CreationDate = row.CreationDate,
                 UpdateDate = row.UpdateDate,
                 RemoveDate = row.RemoveDate,
@@ -62,15 +64,16 @@ namespace DK.Repositories.Products
             };
         }
 
-        public override async Task<IEnumerable<Image>> Get(Variant parent, CancellationToken cancellation = default)
+        public override async Task<IEnumerable<Image>> Get(Color parent, CancellationToken cancellation = default)
         {
             const string sql = @"
                 SELECT 
                     Id, 
-                    VariantId, 
+                    ColorId, 
                     StoredFileId, 
                     IsPrimary, 
                     SortOrder,
+                    SearchString,
                     CreationDate, 
                     UpdateDate, 
                     RemoveDate, 
@@ -78,11 +81,11 @@ namespace DK.Repositories.Products
                     Guid, 
                     IsDeleted                    
                 FROM dbo.Image 
-                WHERE VariantId = @VariantId AND IsDeleted = 0
+                WHERE ColorId = @ColorId AND IsDeleted = 0
                 ORDER BY SortOrder, Id;";
 
             var rows = await _session.Connection.QueryAsync<dynamic>(
-                new CommandDefinition(sql, new { VariantId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
+                new CommandDefinition(sql, new { ColorId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
 
             var list = new List<Image>();
 
@@ -93,6 +96,7 @@ namespace DK.Repositories.Products
                 {
                     Id = (long)row.Id,
                     Guid = row.Guid,
+                    SearchString = row.SearchString,
                     CreationDate = row.CreationDate,
                     UpdateDate = row.UpdateDate,
                     RemoveDate = row.RemoveDate,
@@ -106,22 +110,27 @@ namespace DK.Repositories.Products
             return list;
         }
 
-        public override async Task<Image> Create(Variant parent, Image entity, CancellationToken cancellation = default)
+        public override async Task<Image> Create(Color parent, Image entity, CancellationToken cancellation = default)
         {
-            const string sql = @"
-                INSERT INTO dbo.Image (VariantId, StoredFileId, IsPrimary, SortOrder)
-                OUTPUT INSERTED.Id, INSERTED.VariantId, INSERTED.StoredFileId, INSERTED.IsPrimary, INSERTED.SortOrder,
-                       INSERTED.CreationDate, INSERTED.UpdateDate, INSERTED.RemoveDate, INSERTED.Version, INSERTED.Guid, INSERTED.IsDeleted
-                VALUES (@VariantId, @StoredFileId, @IsPrimary, @SortOrder);";
+            if (entity.File.Id == 0)
+                entity.File = await _storedFileRepository.Create(entity.File, cancellation);
 
+            const string sql = @"
+                INSERT INTO dbo.Image (ColorId, StoredFileId, IsPrimary, SortOrder, SearchString)
+                OUTPUT INSERTED.Id, INSERTED.ColorId, INSERTED.StoredFileId, INSERTED.IsPrimary, INSERTED.SortOrder,
+                       INSERTED.SearchString, INSERTED.CreationDate, INSERTED.UpdateDate, INSERTED.RemoveDate, INSERTED.Version, INSERTED.Guid, INSERTED.IsDeleted
+                VALUES (@ColorId, @StoredFileId, @IsPrimary, @SortOrder, @SearchString);";
+
+            entity.SearchString = entity.ToString();
             var row = await _session.Connection.QuerySingleAsync<dynamic>(
                 new CommandDefinition(sql,
                     new
                     {
-                        VariantId = parent.Id,
+                        ColorId = parent.Id,
                         StoredFileId = entity.File.Id,
                         entity.IsPrimary,
-                        entity.SortOrder
+                        entity.SortOrder,
+                        entity.SearchString
                     },
                     _session.Transaction,
                     cancellationToken: cancellation));
@@ -141,7 +150,7 @@ namespace DK.Repositories.Products
             };
         }
 
-        public override async Task<Image> Update(Variant parent, Image entity, CancellationToken cancellation = default)
+        public override async Task<Image> Update(Color parent, Image entity, CancellationToken cancellation = default)
         {
             var imageOld = await Get(parent, entity.Id, cancellation);
             const string sqlUp = @"
@@ -149,17 +158,19 @@ namespace DK.Repositories.Products
                    SET StoredFileId = @StoredFileId,
                        IsPrimary    = @IsPrimary,
                        SortOrder    = @SortOrder,
+                       SearchString = @SearchString,
                        UpdateDate   = SYSUTCDATETIME(),
                        Version      = Version + 1
-                OUTPUT INSERTED.Id, INSERTED.VariantId, INSERTED.StoredFileId, INSERTED.IsPrimary, INSERTED.SortOrder,
+                OUTPUT INSERTED.Id, INSERTED.ColorId, INSERTED.StoredFileId, INSERTED.IsPrimary, INSERTED.SortOrder,
                        INSERTED.CreationDate, INSERTED.UpdateDate, INSERTED.RemoveDate, INSERTED.Version, INSERTED.Guid, INSERTED.IsDeleted
-                WHERE Id = @Id AND VariantId = @VariantId AND IsDeleted = 0;";
+                WHERE Id = @Id AND ColorId = @ColorId AND IsDeleted = 0;";
 
+            entity.SearchString = entity.ToString();
             var row = await _session.Connection.QuerySingleAsync<dynamic>(
                 new CommandDefinition(sqlUp,
                     new
                     {
-                        entity.Id, VariantId = parent.Id, StoredFileId = entity.File.Id, entity.IsPrimary, entity.SortOrder
+                        entity.Id, ColorId = parent.Id, StoredFileId = entity.File.Id, entity.IsPrimary, entity.SortOrder, entity.SearchString
                     },
                     _session.Transaction,
                     cancellationToken: cancellation));
@@ -172,6 +183,7 @@ namespace DK.Repositories.Products
             {
                 Id = (long)row.Id,
                 Guid = row.Guid,
+                SearchString = entity.SearchString,
                 CreationDate = row.CreationDate,
                 UpdateDate = row.UpdateDate,
                 RemoveDate = row.RemoveDate,
@@ -188,7 +200,7 @@ namespace DK.Repositories.Products
             return updateImage;
         }
 
-        public override async Task Delete(Variant parent, Image entity, CancellationToken cancellation = default)
+        public override async Task Delete(Color parent, Image entity, CancellationToken cancellation = default)
         {
             const string sqlDelImg = @"
                 UPDATE dbo.Image
@@ -196,14 +208,14 @@ namespace DK.Repositories.Products
                        RemoveDate = SYSUTCDATETIME(),
                        UpdateDate = SYSUTCDATETIME(),
                        Version    = Version + 1
-                 WHERE Id = @Id AND VariantId = @VariantId AND IsDeleted = 0;";
+                 WHERE Id = @Id AND ColorId = @ColorId AND IsDeleted = 0;";
             await _session.Connection.ExecuteAsync(
-                new CommandDefinition(sqlDelImg, new { entity.Id, VariantId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
+                new CommandDefinition(sqlDelImg, new { entity.Id, ColorId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
 
             await _storedFileRepository.Delete(entity.File, cancellation);
         }
 
-        public override async Task Delete(Variant parent, IEnumerable< Image> entities, CancellationToken cancellation = default)
+        public override async Task Delete(Color parent, IEnumerable< Image> entities, CancellationToken cancellation = default)
         {
             if (entities is null)
                 return;

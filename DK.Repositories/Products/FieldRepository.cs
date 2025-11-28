@@ -70,11 +70,12 @@ namespace DK.Repositories.Products
         public async override Task<Field> Create(FieldGroup parent, Field entity, CancellationToken cancellation = default)
         {
             var sql = @"
-                INSERT INTO dbo.Field (FieldGroupId, Name, SortOrder) 
+                INSERT INTO dbo.Field (FieldGroupId, Name, SortOrder, SearchString) 
                 OUTPUT INSERTED.*
-                VALUES(@FieldGroupId, @Name, @SortOrder);";
+                VALUES(@FieldGroupId, @Name, @SortOrder, @SearchString);";
 
-            return await _session.Connection.QuerySingleAsync<Field>(new CommandDefinition(sql, new { FieldGroupId = parent.Id, entity.Name, entity.SortOrder }, _session.Transaction, cancellationToken: cancellation));
+            entity.SearchString = entity.ToString();
+            return await _session.Connection.QuerySingleAsync<Field>(new CommandDefinition(sql, new { FieldGroupId = parent.Id, entity.Name, entity.SortOrder, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
         }
 
         public async override Task<Field> Update(FieldGroup parent, Field entity, CancellationToken cancellation = default)
@@ -82,14 +83,16 @@ namespace DK.Repositories.Products
             const string sql = @"
                 UPDATE dbo.Field
                    SET [Name]      = @Name,
-                       SortOrder   = @SortOrder
+                       SortOrder   = @SortOrder,
+                       SearchString = @SearchString,
                        UpdateDate  = SYSUTCDATETIME(),
                        Version     = Version + 1
                 OUTPUT INSERTED.*
                  WHERE FieldGroupId = @FieldGroupId AND Id = @Id AND IsDeleted = 0;";
 
+            entity.SearchString = entity.ToString();
             var updated = await _session.Connection.QuerySingleOrDefaultAsync<Field>(
-                new CommandDefinition(sql, new { FieldGroupId = parent.Id, entity.Id, entity.Name, entity.SortOrder }, _session.Transaction, cancellationToken: cancellation));
+                new CommandDefinition(sql, new { FieldGroupId = parent.Id, entity.Id, entity.Name, entity.SortOrder, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
 
             return updated ?? throw new KeyNotFoundException($"Field {entity.Id} no encontrado para actualizar.");
         }

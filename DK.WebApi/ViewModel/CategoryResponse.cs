@@ -1,9 +1,9 @@
-﻿namespace DK.WebApi.ViewModel
+﻿using DK.WebApi.ViewModel.Base;
+
+namespace DK.WebApi.ViewModel
 {
-    public class CategoryResponse
+    public class CategoryResponse: ResponseCode
     {
-        public long Id { get; set; }
-        public string Code { get; set; }
         public string Name { get; set; }
     }
 }

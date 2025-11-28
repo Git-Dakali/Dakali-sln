@@ -1,4 +1,5 @@
 ﻿using Dakali.Domine.Base;
+using System.Collections.Generic;
 
 namespace DK.Domain.Products
 {
@@ -7,12 +8,14 @@ namespace DK.Domain.Products
         public string Name { get; set; }
         public string Hex { get; set; }
         public int SortOrder { get; set; }
+        public IEnumerable<Image> Images { get; set; }
 
         public Color()
         {
             Name = string.Empty;
             Hex = string.Empty;
             SortOrder = 1;
+            Images = new List<Image>();
         }
 
         public override string ToString()

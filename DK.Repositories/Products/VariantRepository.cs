@@ -12,35 +12,33 @@ namespace DK.Repositories.Products
     public class VariantRepository : RepositoryReferenceEntity<Product, Variant>
     {
         private readonly ISession _session;
-        private readonly ImageRepository _productImageRepository;
-        private readonly AttributeRepository _productAttributeRepository;
+        private readonly AttributeGroupRepository _attributeGroupRepository;
+        private readonly ColorRepository _colorRepository;
 
-        public VariantRepository(ISession session, ImageRepository productImageRepository, AttributeRepository productAttributeRepository)
+        public VariantRepository(ISession session, AttributeGroupRepository attributeGroupRepository, ColorRepository colorRepository)
         {
             _session = session;
-            _productImageRepository = productImageRepository;
-            _productAttributeRepository = productAttributeRepository;
+            _attributeGroupRepository = attributeGroupRepository;
+            _colorRepository = colorRepository;
         }
 
         public async override Task<Variant> Create(Product parent, Variant entity, CancellationToken cancellation = default)
         {
             const string sql = @"
-                INSERT INTO dbo.Variant (ProductId, [Size])
-                OUTPUT INSERTED.Id, INSERTED.ProductId, INSERTED.[Size],
-                       INSERTED.CreationDate, INSERTED.UpdateDate, INSERTED.RemoveDate, INSERTED.Version, INSERTED.Guid, INSERTED.IsDeleted
-                VALUES (@ProductId, @Size);";
+                INSERT INTO dbo.Variant (ProductId, [Name], Price, SalePrice, Active, SearchString)
+                OUTPUT INSERTED.*
+                VALUES (@ProductId, @Name, @Price, @SalePrice, @Active, @SearchString);";
 
+            entity.SearchString = entity.ToString();
             var variant = await _session.Connection.QuerySingleAsync<Variant>(
-                new CommandDefinition(sql, new { parent.Id, entity.Size }, _session.Transaction, cancellationToken: cancellation));
-            variant.Attributes = (await _productAttributeRepository.SyncCollection(variant, entity.Attributes, cancellation)).ToList();
-            variant.Images = (await _productImageRepository.SyncCollection(variant, entity.Images, cancellation)).ToList();
+                new CommandDefinition(sql, new { ProductId = parent.Id, entity.Name, entity.Price, entity.SalePrice, entity.Active, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
+            variant.AttributeGroups = await _attributeGroupRepository.SyncCollection(variant, entity.AttributeGroups, cancellation);
+            variant.ColorsHex = await _colorRepository.SyncCollection(variant, entity.ColorsHex, cancellation);
             return variant;
         }
 
         public async override Task Delete(Product parent, Variant entity, CancellationToken cancellation = default)
         {
-            await _productImageRepository.Delete(entity, entity.Images, cancellation);
-
             const string sql = @"
                 UPDATE dbo.Variant
                    SET IsDeleted  = 1,
@@ -52,8 +50,9 @@ namespace DK.Repositories.Products
             await _session.Connection.ExecuteAsync(
                 new CommandDefinition(sql, new { ProductId = parent.Id, entity.Id }, _session.Transaction, cancellationToken: cancellation));
 
-            await _productAttributeRepository.Delete(entity, entity.Attributes);
-            await _productImageRepository.Delete(entity, entity.Images);
+            await _attributeGroupRepository.Delete(entity, entity.AttributeGroups);
+            await _colorRepository.Delete(entity, entity.ColorsHex);
+
         }
 
         public async override Task Delete(Product parent, IEnumerable<Variant> entities, CancellationToken cancellation = default)
@@ -68,8 +67,7 @@ namespace DK.Repositories.Products
         public async override Task<Variant> Get(Product parent, long id, CancellationToken cancellation = default)
         {
             const string sql = @"
-                SELECT Id, ProductId, [Size],
-                       CreationDate, UpdateDate, RemoveDate, Version, Guid, IsDeleted
+                SELECT *
                   FROM dbo.Variant
                  WHERE ProductId = @ProductId AND Id = @Id AND IsDeleted = 0;";
 
@@ -77,9 +75,9 @@ namespace DK.Repositories.Products
                 new CommandDefinition(sql, new { ProductId = parent.Id, Id = id }, _session.Transaction, cancellationToken: cancellation));
 
             if (variant != null)
-            {
-                variant.Images = (await _productImageRepository.Get(variant)).ToList();
-                variant.Attributes = (await _productAttributeRepository.Get(variant)).ToList();
+            { 
+                variant.AttributeGroups = (await _attributeGroupRepository.Get(variant)).ToList();
+                variant.ColorsHex = await _colorRepository.Get(variant);
             }
 
             return variant;
@@ -88,8 +86,7 @@ namespace DK.Repositories.Products
         public async override Task<IEnumerable<Variant>> Get(Product parent, CancellationToken cancellation = default)
         {
             const string sql = @"
-                SELECT Id, ProductId, [Size],
-                       CreationDate, UpdateDate, RemoveDate, Version, Guid, IsDeleted
+                SELECT *
                   FROM dbo.Variant
                  WHERE ProductId = @ProductId AND IsDeleted = 0;";
 
@@ -98,9 +95,11 @@ namespace DK.Repositories.Products
 
             foreach (var variant in variants)
             {
-                variant.Images = (await _productImageRepository.Get(variant)).ToList();
-                variant.Attributes = (await _productAttributeRepository.Get(variant)).ToList();
+                variant.AttributeGroups = await _attributeGroupRepository.Get(variant);
+                variant.ColorsHex = await _colorRepository.Get(variant);
             }
+
+
             return variants;
         }
 
@@ -108,27 +107,32 @@ namespace DK.Repositories.Products
         {
             return entity.Id != persited.Id ||
                 entity.ColorsHex != persited.ColorsHex ||
-                entity.Cost != persited.Cost;
+                entity.Price != persited.Price ||
+                entity.SalePrice != persited.SalePrice;
         }
 
         public async override Task<Variant> Update(Product parent, Variant entity, CancellationToken cancellation = default)
         {
             const string sql = @"
                 UPDATE dbo.Variant
-                   SET [Size]      = @Size,
-                       UpdateDate  = SYSUTCDATETIME(),
-                       Version     = Version + 1
-                OUTPUT INSERTED.Id, INSERTED.ProductId, INSERTED.[Size],
-                       INSERTED.CreationDate, INSERTED.UpdateDate, INSERTED.RemoveDate, INSERTED.Version, INSERTED.Guid, INSERTED.IsDeleted
+                   SET [Name]       = @Name,
+                       Price        = @Price,
+                       SalePrice    = @SalePrice,
+                       Active       = @Active,
+                       SearchString = @SearchString,
+                       UpdateDate   = SYSUTCDATETIME(),
+                       Version      = Version + 1
+                OUTPUT INSERTED.*
                  WHERE ProductId = @ProductId AND Id = @Id AND IsDeleted = 0;";
 
+            entity.SearchString = entity.ToString();
             var updated = await _session.Connection.QuerySingleOrDefaultAsync<Variant>(
-                new CommandDefinition(sql, new { ProductId = parent.Id, entity.Id, entity.Size }, _session.Transaction, cancellationToken: cancellation));
+                new CommandDefinition(sql, new { ProductId = parent.Id, entity.Id, entity.Name, entity.Price, entity.SalePrice, entity.Active, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
 
             if (updated != null)
-            {
-                updated.Images = (await _productImageRepository.SyncCollection(entity, entity.Images, cancellation)).ToList();
-                updated.Attributes = (await _productAttributeRepository.SyncCollection(entity, entity.Attributes, cancellation)).ToList();
+            { 
+                updated.AttributeGroups = await _attributeGroupRepository.SyncCollection(entity, entity.AttributeGroups, cancellation);
+                updated.ColorsHex = await _colorRepository.SyncCollection(entity, entity.ColorsHex, cancellation);
             }
 
             return updated ?? throw new KeyNotFoundException($"Variant {entity.Id} no encontrado para actualizar.");

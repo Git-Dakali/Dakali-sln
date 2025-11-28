@@ -34,31 +34,35 @@ namespace DK.Repositories.Products
             return await _session.Connection.QuerySingleOrDefaultAsync<Category>(query, new { Code = code }, transaction: _session.Transaction);
         }
 
-        public async Task<Category> Create(Category Category, CancellationToken cancellation = default)
+        public async Task<Category> Create(Category category, CancellationToken cancellation = default)
         {
             var query = @"
-            INSERT INTO dbo.Category (Code, Name)
+            INSERT INTO dbo.Category (Code, Name, SearchString)
             OUTPUT INSERTED.*
-            VALUES (@Code, @Name);";
-
-            return await _session.Connection.QuerySingleAsync<Category>(query, Category, transaction: _session.Transaction);
+            VALUES (@Code, @Name, @SearchString);";
+            
+            category.SearchString = category.ToString();
+            return await _session.Connection.QuerySingleAsync<Category>(query, category, transaction: _session.Transaction);
         }
 
-        public async Task<Category> Update(Category Category, CancellationToken cancellation = default)
+        public async Task<Category> Update(Category category, CancellationToken cancellation = default)
         {
             var query = @"
                 UPDATE dbo.Category
                 SET 
                     Name = @Name,
+                    SearchString = @SearchString,
                     UpdateDate = SYSUTCDATETIME(),
                     Version = Version + 1
                 OUTPUT INSERTED.*
                 WHERE Id = @Id AND IsDeleted = 0;
             ";
 
-            var category = await _session.Connection.QuerySingleAsync<Category>(query, Category, transaction: _session.Transaction);
+            category.SearchString = category.ToString();
+            var newCategory = await _session.Connection.QuerySingleAsync<Category>(query, category, transaction: _session.Transaction);
+            
 
-            return category?? throw new KeyNotFoundException($"Category {Category.Id}-{Category.Name} no encontrado para actualizar.");
+            return newCategory ?? throw new KeyNotFoundException($"Category {category.Id}-{category.Name} no encontrado para actualizar.");
         }
 
         public async Task Delete(Category Category, CancellationToken cancellation = default)

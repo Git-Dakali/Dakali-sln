@@ -20,11 +20,12 @@ namespace DK.Repositories.Products
         public async override Task<Size> Create(Model parent, Size entity, CancellationToken cancellation = default)
         {
             var sql = @"
-                INSERT INTO dbo.Size (ModelId, Name, SortOrder) 
+                INSERT INTO dbo.Size (ModelId, Name, SortOrder, SearchString) 
                 OUTPUT INSERTED.*
-                VALUES(@ModelId, @Name, @SortOrder);";
+                VALUES(@ModelId, @Name, @SortOrder, @SearchString);";
 
-            return await _session.Connection.QuerySingleAsync<Size>(new CommandDefinition(sql, new { ModelId = parent.Id, entity.Name, entity.SortOrder }, _session.Transaction, cancellationToken: cancellation));
+            entity.SearchString = entity.ToString();
+            return await _session.Connection.QuerySingleAsync<Size>(new CommandDefinition(sql, new { ModelId = parent.Id, entity.Name, entity.SortOrder, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
         }
 
         public async override Task Delete(Model parent, Size entity, CancellationToken cancellation = default)
@@ -82,13 +83,15 @@ namespace DK.Repositories.Products
                 UPDATE dbo.Size
                    SET Name      = @Name,
                        SortOrder   = @SortOrder,
+                       SearchString = @SearchString,
                        UpdateDate  = SYSUTCDATETIME(),
                        Version     = Version + 1
                 OUTPUT INSERTED.*
                  WHERE ModelId = @ModelId AND Id = @Id AND IsDeleted = 0;";
 
+            entity.SearchString = entity.ToString();
             var updated = await _session.Connection.QuerySingleOrDefaultAsync<Size>(
-                new CommandDefinition(sql, new { ModelId = parent.Id, entity.Id, entity.Name, entity.SortOrder }, _session.Transaction, cancellationToken: cancellation));
+                new CommandDefinition(sql, new { ModelId = parent.Id, entity.Id, entity.Name, entity.SortOrder, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
 
             return updated ?? throw new KeyNotFoundException($"Size {entity.Id} no encontrado para actualizar.");
         }

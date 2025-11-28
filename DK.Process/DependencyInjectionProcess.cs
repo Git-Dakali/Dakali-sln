@@ -9,6 +9,7 @@ namespace DK.Process
         {
             service.AddScoped<CategoryProcess>();
             service.AddScoped<ModelProcess>();
+            service.AddScoped<ProductProcess>();
         }
     }
 }

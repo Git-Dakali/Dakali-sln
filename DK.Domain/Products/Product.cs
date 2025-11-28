@@ -8,7 +8,7 @@ namespace DK.Domain.Products
         public string Name { get; set; }
         public string Description { get; set; }
         public Model Model { get; set; }
-        public IList<Variant> Variants { get; set; }
+        public IEnumerable<Variant> Variants { get; set; }
 
         public Product() {
             Name = string.Empty;

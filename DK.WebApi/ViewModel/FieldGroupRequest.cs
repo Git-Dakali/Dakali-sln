@@ -1,8 +1,9 @@
-﻿namespace DK.WebApi.ViewModel
+﻿using DK.WebApi.ViewModel.Base;
+
+namespace DK.WebApi.ViewModel
 {
-    public class FieldGroupRequest
+    public class FieldGroupRequest : RequestGuid
     {
-        public long Id { get; set; }
         public string Name { get; set; }
         public int SortOrder { get; set; }
         public IEnumerable<FieldRequest> Fields { get; set; }

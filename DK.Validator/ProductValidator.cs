@@ -26,7 +26,7 @@ namespace DK.Validator
             await Variant(product, cancellationToken);
         }
 
-        public async Task Update(Product product, Variant variant, CancellationToken cancellationToken = default)
+        public async Task Update(Product product, CancellationToken cancellationToken = default)
         {
             await Name(product, cancellationToken);
             await Description(product, cancellationToken);
@@ -72,15 +72,15 @@ namespace DK.Validator
         {
             if (product.Variants is null)
                 throw new Exception("Debe ingresar variantes.");
-            if (product.Variants.Count == 0)
+            if (product.Variants.Count() == 0)
                 throw new Exception("Debe ingresar variantes.");
 
-            if(product.Model.Sizes.Count() != product.Variants.Count)
+            if(product.Model.Sizes.Count() != product.Variants.Count())
                 throw new Exception("Los tamaños del modelo, no estan todos configurado como variante en el producto.");
 
             foreach (var size in product.Model.Sizes)
             {
-                var variant = product.Variants.FirstOrDefault(v => v.Size.ToUpper() == size.Name.ToUpper());
+                var variant = product.Variants.FirstOrDefault(v => v.Name.ToUpper() == size.Name.ToUpper());
 
                 if (variant is null)
                     throw new Exception($"El tamaño {size.Name}, no existe como una variante.");

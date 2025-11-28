@@ -28,11 +28,12 @@ namespace DK.Repositories.Products
         public async Task<Model> Create(Model entity, CancellationToken cancellation = default)
         {
             var query = @"
-            INSERT INTO dbo.Model (Code, CategoryId)
+            INSERT INTO dbo.Model (Code, CategoryId, SearchString)
             OUTPUT INSERTED.*
-            VALUES (@Code, @CategoryId);";
+            VALUES (@Code, @CategoryId, @SearchString);";
 
-            var model = await _session.Connection.QuerySingleAsync<Model>(query, new { entity.Code, CategoryId = entity.Category.Id }, transaction: _session.Transaction);
+            entity.SearchString = entity.ToString();
+            var model = await _session.Connection.QuerySingleAsync<Model>(query, new { entity.Code, CategoryId = entity.Category.Id, entity.SearchString }, transaction: _session.Transaction);
 
             if (model != null)
             { 
@@ -60,7 +61,7 @@ namespace DK.Repositories.Products
         public async Task<IEnumerable<Model>> GetAll(CancellationToken cancellation = default)
         {
             var query = @"
-                select Id, Code, CategoryId, CreationDate, RemoveDate, UpdateDate, Version, Guid, IsDeleted 
+                select *
                 from dbo.Model 
                 where IsDeleted = 0";
             var rowsDapper = await _session.Connection.QueryAsync(query, new { }, transaction: _session.Transaction);
@@ -74,6 +75,7 @@ namespace DK.Repositories.Products
                 var newModel = new Model();
                 newModel.Id = rowDapper.Id;
                 newModel.Code = rowDapper.Code;
+                newModel.SearchString = rowDapper.SearchString;
                 newModel.CreationDate = rowDapper.CreationDate;
                 newModel.UpdateDate = rowDapper.UpdateDate;
                 newModel.RemoveDate = rowDapper.RemoveDate;
@@ -93,7 +95,7 @@ namespace DK.Repositories.Products
         public async Task<Model> Get(long id, CancellationToken cancellation = default)
         {
             var query = @"
-                select Id, Code, CategoryId, CreationDate, RemoveDate, UpdateDate, Version, Guid, IsDeleted 
+                select *
                 from dbo.Model 
                 where IsDeleted = 0 AND Id = @Id";
             var model = await _session.Connection.QuerySingleOrDefaultAsync<dynamic>(query, new { Id = id }, transaction: _session.Transaction);
@@ -104,6 +106,7 @@ namespace DK.Repositories.Products
             var rowDapper = new Model();
             rowDapper.Id = model.Id;
             rowDapper.Code = model.Code;
+            rowDapper.SearchString = model.SearchString;
             rowDapper.CreationDate = model.CreationDate;
             rowDapper.UpdateDate = model.UpdateDate;
             rowDapper.RemoveDate = model.RemoveDate;
@@ -150,13 +153,15 @@ namespace DK.Repositories.Products
                 UPDATE dbo.Model
                 SET 
                     CategoryId = @CategoryId,
+                    SearchString = @SearchString,
                     UpdateDate = SYSUTCDATETIME(),
                     Version = Version + 1
                 OUTPUT INSERTED.*
                 WHERE Id = @Id AND IsDeleted = 0;
             ";
 
-            await _session.Connection.QuerySingleAsync<Model>(query, new { entity.Id, CategoryId = entity.Category.Id}, transaction: _session.Transaction);
+            entity.SearchString = entity.ToString();
+            await _session.Connection.QuerySingleAsync<Model>(query, new { entity.Id, CategoryId = entity.Category.Id, entity.SearchString}, transaction: _session.Transaction);
             await _fieldGroupRepository.SyncCollection(entity, entity.FieldGroups, cancellation);
             await _sizeRepository.SyncCollection(entity, entity.Sizes, cancellation);
 

@@ -8,6 +8,7 @@ namespace DK.Validator
         {
             service.AddScoped<CategoryValidator>();
             service.AddScoped<ModelValidator>();
+            service.AddScoped<ProductValidator>();
         }
     }
 }

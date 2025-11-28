@@ -2,7 +2,7 @@
 
 namespace DK.Domain.Products
 {
-    public class Attribute : Entity
+    public class Attribute : EntityGuid
     {
         public string Field { get; set; }
         public string Value { get; set; }

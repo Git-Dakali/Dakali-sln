@@ -6,6 +6,6 @@ namespace Dakali.Domine.Base
     {
         public long Id { get; set; }
 
-        public string SearchString { get { return ToString(); } }
+        public string SearchString { get; set; }
     }
 }

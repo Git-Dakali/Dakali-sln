@@ -17,10 +17,22 @@ namespace DK.Repositories.Products
             _session = session;
         }
 
+        public async Task<IEnumerable<StoredFile>> GetAll(CancellationToken cancellation = default)
+        {
+            const string sql = @"
+                SELECT *
+                FROM dbo.StoredFile
+                WHERE IsDeleted = 0;
+            ";
+
+            return await _session.Connection.QueryAsync<StoredFile>(
+                new CommandDefinition(sql, new {}, _session.Transaction, cancellationToken: cancellation));
+        }
+
         public async Task<StoredFile?> Get(long id, CancellationToken cancellation = default)
         {
             const string sql = @"
-                SELECT Id, FileName, [Module], CreationDate, UpdateDate, RemoveDate, Version, Guid, IsDeleted
+                SELECT *
                 FROM dbo.StoredFile
                 WHERE Id = @Id AND IsDeleted = 0;
             ";
@@ -32,13 +44,12 @@ namespace DK.Repositories.Products
         public async Task<StoredFile> Create(StoredFile entity, CancellationToken cancellation = default)
         {
             const string sql = @"
-                INSERT INTO dbo.StoredFile (FileName, [Content], [Module])
-                OUTPUT INSERTED.Id, INSERTED.FileName, INSERTED.[Module],
-                       INSERTED.CreationDate, INSERTED.UpdateDate, INSERTED.RemoveDate,
-                       INSERTED.Version, INSERTED.Guid, INSERTED.IsDeleted
-                VALUES (@FileName, @Content, @Module);
+                INSERT INTO dbo.StoredFile (FileName, [ContentBase64], [Module], SearchString)
+                OUTPUT INSERTED.*
+                VALUES (@FileName, @ContentBase64, @Module, @SearchString);
             ";
 
+            entity.SearchString = entity.ToString();
             return await _session.Connection.QuerySingleAsync<StoredFile>(
                 new CommandDefinition(sql, entity, _session.Transaction, cancellationToken: cancellation));
         }
@@ -49,6 +60,7 @@ namespace DK.Repositories.Products
                 UPDATE dbo.StoredFile
                    SET FileName = @FileName,
                        [Module] = @Module,
+                       SearchString = @SearchString,
                        UpdateDate = SYSUTCDATETIME(),
                        Version = Version + 1
                 OUTPUT INSERTED.Id, INSERTED.FileName, INSERTED.[Module],
@@ -57,6 +69,7 @@ namespace DK.Repositories.Products
                  WHERE Id = @Id AND IsDeleted = 0;
             ";
 
+            entity.SearchString = entity.ToString();
             var file = await _session.Connection.QuerySingleAsync<StoredFile>(
                 new CommandDefinition(sql, entity, _session.Transaction, cancellationToken: cancellation));
 
@@ -78,15 +91,15 @@ namespace DK.Repositories.Products
                 new CommandDefinition(sql, entity, _session.Transaction, cancellationToken: cancellation));
         }
 
-        public async Task<byte[]?> GetFileContent(long id, CancellationToken cancellation = default)
+        public async Task<string> GetFileContentBase64(long id, CancellationToken cancellation = default)
         {
             const string sql = @"
-                SELECT [Content]
+                SELECT [ContentBase64]
                   FROM dbo.StoredFile
                  WHERE Id = @Id AND IsDeleted = 0;
             ";
 
-            return await _session.Connection.ExecuteScalarAsync<byte[]>(
+            return await _session.Connection.ExecuteScalarAsync<string>(
                 new CommandDefinition(sql, new { Id = id }, _session.Transaction, cancellationToken: cancellation));
         }
     }

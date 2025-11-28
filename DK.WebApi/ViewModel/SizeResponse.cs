@@ -1,8 +1,9 @@
-﻿namespace DK.WebApi.ViewModel
+﻿using DK.WebApi.ViewModel.Base;
+
+namespace DK.WebApi.ViewModel
 {
-    public class SizeResponse
+    public class SizeResponse : ResponseGuid
     {
-        public long Id { get; set; }
         public string Name { get; set; }
         public int SortOrder { get; set; }
     }

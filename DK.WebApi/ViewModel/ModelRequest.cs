@@ -1,9 +1,9 @@
-﻿namespace DK.WebApi.ViewModel
+﻿using DK.WebApi.ViewModel.Base;
+
+namespace DK.WebApi.ViewModel
 {
-    public class ModelRequest
+    public class ModelRequest : RequestCode
     {
-        public long Id { get; set; }
-        public string Code { get; set; }
         public CategoryRequest Category { get; set; }
         public IEnumerable<FieldGroupRequest> FieldGroups { get; set; }
         public List<SizeRequest> Sizes { get; set; }

@@ -1,26 +1,27 @@
 ﻿using Dakali.Domine.Base;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace DK.Domain.Products
 {
     public class Variant : EntityGuid
     {
-        public string Size { get; set; }
-        public decimal Cost { get; set; }
-        public IList<Color> ColorsHex { get; set; }
-        public IList<Image> Images { get; set; }
-        public IList<Attribute> Attributes { get; set; }
+        public string Name { get; set; }
+        public decimal Price { get; set; }
+        public decimal SalePrice { get; set; }
+        public bool Active { get; set; }
+        public IEnumerable<Color> ColorsHex { get; set; }
+        public IEnumerable<AttributeGroup> AttributeGroups { get; set; }
 
         public Variant()
         {
             ColorsHex = new List<Color>();
-            Attributes = new List<Attribute>();
-            Images = new List<Image>();
+            AttributeGroups = new List<AttributeGroup>();
         }
 
         public override string ToString()
         {
-            return $"{Size}";
+            return $"{Name} [ {string.Join(" , ", AttributeGroups.Select(a => a.ToString()))} ]";
         }
     }
 }
