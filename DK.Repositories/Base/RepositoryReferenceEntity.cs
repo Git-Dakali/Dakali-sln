@@ -17,7 +17,7 @@ namespace DK.Repositories.Base
         public abstract Task<Child> Get(Parent parent, long id, CancellationToken cancellation = default);
         public abstract Task<IEnumerable<Child>> Get(Parent parent, CancellationToken cancellation = default);
         public abstract Task<Child> Update(Parent parent, Child entity, CancellationToken cancellation = default);
-        public abstract bool HasChanges(Child entity, Child persited);
+        public abstract Task<bool> HasChanges(Child entity, Child persited);
 
         public async Task<IEnumerable<Child>> SyncCollection(Parent parent, IEnumerable<Child> entities, CancellationToken cancellation = default)
         {
@@ -29,7 +29,7 @@ namespace DK.Repositories.Base
 
                 if (entity is null)
                     await Delete(parent, persisted, cancellation);
-                else if(HasChanges(entity, persisted))
+                else if(await HasChanges(entity, persisted))
                     await Update(parent, entity, cancellation);
             }
 
@@ -39,6 +39,22 @@ namespace DK.Repositories.Base
             }
 
             return await Get(parent);
+        }
+
+        public async Task<bool> HasChanges(Parent parent, IEnumerable<Child> entities, CancellationToken cancellation = default)
+        {
+            var listPersisted = await Get(parent, cancellation);
+            foreach (var persisted in listPersisted)
+            {
+                var entity = entities.SingleOrDefault(x => x.Id > 0 && x.Id == persisted.Id);
+
+                if (entity is null)
+                    return true;
+                else if (await HasChanges(entity, persisted))
+                    return true;
+            }
+
+            return entities.Any(x => x.Id == 0);
         }
     }
 }

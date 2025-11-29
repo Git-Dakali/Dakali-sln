@@ -23,9 +23,7 @@ namespace DK.Repositories.Products
         {
             const string sql = @"
                 INSERT INTO dbo.AttributeGroup (VariantId, [Name], [SortOrder], SearchString)
-                OUTPUT INSERTED.Id, INSERTED.[Name], INSERTED.[SortOrder],
-                    INSERTED.CreationDate, INSERTED.UpdateDate, INSERTED.RemoveDate,
-                    INSERTED.Version, INSERTED.Guid, INSERTED.IsDeleted, INSERTED.SearchString
+                OUTPUT INSERTED.*
                 VALUES (@VariantId, @Name, @SortOrder, @SearchString);";
             
             entity.SearchString = entity.ToString();
@@ -90,11 +88,12 @@ namespace DK.Repositories.Products
                 new CommandDefinition(sql, new { VariantId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
         }
 
-        public override bool HasChanges(AttributeGroup entity, AttributeGroup persited)
+        public async override Task<bool> HasChanges(AttributeGroup entity, AttributeGroup persited)
         {
             return entity.Id != persited.Id
                 || string.Compare(entity.Name, persited.Name, true) != 0
-                || entity.SortOrder != persited.SortOrder;
+                || entity.SortOrder != persited.SortOrder
+                || await _productAttributeRepository.HasChanges(persited, entity.Attributes);
         }
 
         public async override Task<AttributeGroup> Update(Variant parent, AttributeGroup entity, CancellationToken cancellation = default)
@@ -106,9 +105,7 @@ namespace DK.Repositories.Products
                         SearchString = @SearchString,
                         UpdateDate = SYSUTCDATETIME(),
                         Version = Version + 1
-                OUTPUT INSERTED.Id, INSERTED.[Field], INSERTED.[Value],
-                        INSERTED.CreationDate, INSERTED.UpdateDate, INSERTED.RemoveDate,
-                        INSERTED.Version, INSERTED.Guid, INSERTED.IsDeleted
+                OUTPUT INSERTED.*
                     WHERE Id = @Id AND VariantId = @VariantId AND IsDeleted = 0;";
 
             entity.SearchString = entity.ToString();

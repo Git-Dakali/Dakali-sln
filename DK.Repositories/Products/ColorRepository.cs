@@ -84,11 +84,12 @@ namespace DK.Repositories.Products
             return colors;
         }
 
-        public override bool HasChanges(Color entity, Color persited)
+        public async override Task<bool> HasChanges(Color entity, Color persited)
         {
             return entity.Id != persited.Id ||
                 entity.Hex != persited.Hex ||
-                entity.SortOrder != persited.SortOrder;
+                entity.SortOrder != persited.SortOrder ||
+                await _colorImageRepository.HasChanges(persited, entity.Images);
         }
 
         public async override Task<Color> Update(Variant parent, Color entity, CancellationToken cancellation = default)

@@ -97,7 +97,7 @@ namespace DK.Repositories.Products
             return updated ?? throw new KeyNotFoundException($"Field {entity.Id} no encontrado para actualizar.");
         }
 
-        public override bool HasChanges(Field entity, Field persited)
+        public async override Task<bool> HasChanges(Field entity, Field persited)
         {
             return entity.Id != persited.Id ||
                 entity.Name != persited.Name ||

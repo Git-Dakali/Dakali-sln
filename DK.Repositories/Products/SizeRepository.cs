@@ -70,7 +70,7 @@ namespace DK.Repositories.Products
             return await _session.Connection.QueryAsync<Size>(new CommandDefinition(sql, new { ModelId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
         }
 
-        public override bool HasChanges(Size entity, Size persited)
+        public async override Task<bool> HasChanges(Size entity, Size persited)
         {
             return entity.Id != persited.Id ||
                 entity.Name != persited.Name ||

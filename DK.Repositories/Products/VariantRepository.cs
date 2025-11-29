@@ -103,12 +103,13 @@ namespace DK.Repositories.Products
             return variants;
         }
 
-        public override bool HasChanges(Variant entity, Variant persited)
+        public async override Task<bool> HasChanges(Variant entity, Variant persited)
         {
             return entity.Id != persited.Id ||
                 entity.ColorsHex != persited.ColorsHex ||
                 entity.Price != persited.Price ||
-                entity.SalePrice != persited.SalePrice;
+                entity.SalePrice != persited.SalePrice ||
+                await _colorRepository.HasChanges(persited, entity.ColorsHex);
         }
 
         public async override Task<Variant> Update(Product parent, Variant entity, CancellationToken cancellation = default)

@@ -103,7 +103,7 @@ namespace DK.Repositories.Products
             return updated ?? throw new KeyNotFoundException($"El attributo {entity.Id}-{entity.Field} no encontrado para el grupo {parent.Id}-{parent.Name}.");
         }
 
-        public override bool HasChanges(Attribute entity, Attribute persited)
+        public async override Task<bool> HasChanges(Attribute entity, Attribute persited)
         {
             return entity.Id != persited.Id
                 || string.Compare(entity.Field, persited.Field, true) != 0

@@ -224,13 +224,12 @@ namespace DK.Repositories.Products
                 await Delete(parent, entity, cancellation);
         }
 
-        public override bool HasChanges(Image entity, Image persisted)
+        public async override Task<bool> HasChanges(Image entity, Image persisted)
         {
             return entity.Id != persisted.Id
                 || entity.IsPrimary != persisted.IsPrimary
                 || entity.SortOrder != persisted.SortOrder
                 || entity.File.Id != persisted.File.Id;
         }
-
     }
 }

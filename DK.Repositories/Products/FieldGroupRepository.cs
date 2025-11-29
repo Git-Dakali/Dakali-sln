@@ -109,10 +109,11 @@ namespace DK.Repositories.Products
             await _fieldRepfository.Delete(entity, cancellation);
         }
 
-        public override bool HasChanges(FieldGroup entity, FieldGroup persisted)
+        public async override Task<bool> HasChanges(FieldGroup entity, FieldGroup persisted)
         {
             return entity.Name != persisted.Name ||
-                   entity.SortOrder != persisted.SortOrder;
+                   entity.SortOrder != persisted.SortOrder ||
+                   await _fieldRepfository.HasChanges(persisted, entity.Fields);
         }
 
         public async override Task Delete(Model parent, IEnumerable<FieldGroup> entities, CancellationToken cancellation = default)
