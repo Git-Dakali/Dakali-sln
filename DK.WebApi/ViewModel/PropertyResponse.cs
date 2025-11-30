@@ -2,7 +2,7 @@
 
 namespace DK.WebApi.ViewModel
 {
-    public class AttributeRequest: RequestGuid
+    public class PropertyResponse: ResponseGuid
     {
         public string Field { get; set; }
         public string Value { get; set; }

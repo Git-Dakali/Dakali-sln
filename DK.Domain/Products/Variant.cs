@@ -10,18 +10,20 @@ namespace DK.Domain.Products
         public decimal Price { get; set; }
         public decimal SalePrice { get; set; }
         public bool Active { get; set; }
+        public int SortOrder { get; set; }
         public IEnumerable<Color> ColorsHex { get; set; }
-        public IEnumerable<AttributeGroup> AttributeGroups { get; set; }
+        public IEnumerable<PropertyGroup> PropertyGroups { get; set; }
 
         public Variant()
         {
             ColorsHex = new List<Color>();
-            AttributeGroups = new List<AttributeGroup>();
+            PropertyGroups = new List<PropertyGroup>();
+            SortOrder = 1;
         }
 
         public override string ToString()
         {
-            return $"{Name} [ {string.Join(" , ", AttributeGroups.Select(a => a.ToString()))} ]";
+            return $"{Name} [ {string.Join(" , ", PropertyGroups.Select(a => a.ToString()))} ]";
         }
     }
 }

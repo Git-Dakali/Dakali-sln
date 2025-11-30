@@ -8,36 +8,36 @@ using System.Threading.Tasks;
 
 namespace DK.Repositories.Products
 {
-    public class AttributeGroupRepository : RepositoryReferenceEntity<Variant, AttributeGroup>
+    public class PropertyGroupRepository : RepositoryReferenceEntity<Variant, PropertyGroup>
     {
         private readonly ISession _session;
-        private readonly AttributeRepository _productAttributeRepository;
+        private readonly PropertyRepository _propertyRepository;
 
-        public AttributeGroupRepository(ISession session, AttributeRepository productAttributeRepository)
+        public PropertyGroupRepository(ISession session, PropertyRepository productAttributeRepository)
         {
             _session = session;
-            _productAttributeRepository = productAttributeRepository;
+            _propertyRepository = productAttributeRepository;
         }
 
-        public async override Task<AttributeGroup> Create(Variant parent, AttributeGroup entity, CancellationToken cancellation = default)
+        public async override Task<PropertyGroup> Create(Variant parent, PropertyGroup entity, CancellationToken cancellation = default)
         {
             const string sql = @"
-                INSERT INTO dbo.AttributeGroup (VariantId, [Name], [SortOrder], SearchString)
+                INSERT INTO dbo.PropertyGroup (VariantId, [Name], [SortOrder], SearchString)
                 OUTPUT INSERTED.*
                 VALUES (@VariantId, @Name, @SortOrder, @SearchString);";
             
             entity.SearchString = entity.ToString();
-            var group = await _session.Connection.QuerySingleAsync<AttributeGroup>(
+            var group = await _session.Connection.QuerySingleAsync<PropertyGroup>(
                 new CommandDefinition(sql, new { VariantId = parent.Id, entity.Name, entity.SortOrder, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
 
-            group.Attributes = await _productAttributeRepository.SyncCollection(group, entity.Attributes, cancellation);
+            group.Properties = await _propertyRepository.SyncCollection(group, entity.Properties, cancellation);
             return group;
         }
 
-        public async override Task Delete(Variant parent, AttributeGroup entity, CancellationToken cancellation = default)
+        public async override Task Delete(Variant parent, PropertyGroup entity, CancellationToken cancellation = default)
         {
             const string sql = @"
-                UPDATE dbo.AttributeGroup
+                UPDATE dbo.PropertyGroup
                    SET IsDeleted = 1,
                        RemoveDate = SYSUTCDATETIME(),
                        UpdateDate = SYSUTCDATETIME(),
@@ -49,7 +49,7 @@ namespace DK.Repositories.Products
                 new CommandDefinition(sql, new { entity.Id, VariantId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
         }
 
-        public async override Task Delete(Variant parent, IEnumerable<AttributeGroup> entities, CancellationToken cancellation = default)
+        public async override Task Delete(Variant parent, IEnumerable<PropertyGroup> entities, CancellationToken cancellation = default)
         {
             if (entities is null)
                 return;
@@ -58,48 +58,53 @@ namespace DK.Repositories.Products
                 await Delete(parent, entity, cancellation);
         }
 
-        public async override Task<AttributeGroup> Get(Variant parent, long id, CancellationToken cancellation = default)
+        public async override Task<PropertyGroup> Get(Variant parent, long id, CancellationToken cancellation = default)
         {
             const string sql = @"
                 SELECT Id, [Name], [SortOrder],
                     SearchString, CreationDate, UpdateDate, RemoveDate, Version, Guid, IsDeleted
-                FROM dbo.AttributeGroup
+                FROM dbo.PropertyGroup
                 WHERE  Id = @Id AND VariantId = @VariantId AND IsDeleted = 0";
 
-            var group = await _session.Connection.QuerySingleOrDefaultAsync<AttributeGroup>(
+            var group = await _session.Connection.QuerySingleOrDefaultAsync<PropertyGroup>(
                 new CommandDefinition(sql, new { Id = id, VariantId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
 
             if (group != null)
-                group.Attributes = await _productAttributeRepository.Get(group);
+                group.Properties = await _propertyRepository.Get(group, cancellation);
 
             return group;
         }
 
-        public async override Task<IEnumerable<AttributeGroup>> Get(Variant parent, CancellationToken cancellation = default)
+        public async override Task<IEnumerable<PropertyGroup>> Get(Variant parent, CancellationToken cancellation = default)
         {
             const string sql = @"
                 SELECT Id, [Name], [SortOrder],
                     SearchString, CreationDate, UpdateDate, RemoveDate, Version, Guid, IsDeleted
-                FROM dbo.AttributeGroup
+                FROM dbo.PropertyGroup
                 WHERE VariantId = @VariantId AND IsDeleted = 0
                 ORDER BY Id;";
 
-            return await _session.Connection.QueryAsync<AttributeGroup>(
+            var groups = await _session.Connection.QueryAsync<PropertyGroup>(
                 new CommandDefinition(sql, new { VariantId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
+
+            foreach (var group in groups)
+                group.Properties = await _propertyRepository.Get(group, cancellation);
+
+            return groups;
         }
 
-        public async override Task<bool> HasChanges(AttributeGroup entity, AttributeGroup persited)
+        public async override Task<bool> HasChanges(PropertyGroup entity, PropertyGroup persited)
         {
             return entity.Id != persited.Id
                 || string.Compare(entity.Name, persited.Name, true) != 0
                 || entity.SortOrder != persited.SortOrder
-                || await _productAttributeRepository.HasChanges(persited, entity.Attributes);
+                || await _propertyRepository.HasChanges(persited, entity.Properties);
         }
 
-        public async override Task<AttributeGroup> Update(Variant parent, AttributeGroup entity, CancellationToken cancellation = default)
+        public async override Task<PropertyGroup> Update(Variant parent, PropertyGroup entity, CancellationToken cancellation = default)
         {
             const string sql = @"
-                UPDATE dbo.AttributeGroup
+                UPDATE dbo.PropertyGroup
                     SET [Name] = @Name,
                         [SortOrder] = @SortOrder,
                         SearchString = @SearchString,
@@ -109,14 +114,14 @@ namespace DK.Repositories.Products
                     WHERE Id = @Id AND VariantId = @VariantId AND IsDeleted = 0;";
 
             entity.SearchString = entity.ToString();
-            var updated = await _session.Connection.QuerySingleOrDefaultAsync<AttributeGroup>(
+            var updated = await _session.Connection.QuerySingleOrDefaultAsync<PropertyGroup>(
                 new CommandDefinition(sql,
                     new { entity.Id, VariantId = parent.Id, entity.Name, entity.SortOrder, entity.SearchString },
                     _session.Transaction,
                     cancellationToken: cancellation));
 
             if(updated != null)
-                updated.Attributes = await _productAttributeRepository.SyncCollection(updated, entity.Attributes, cancellation);
+                updated.Properties = await _propertyRepository.SyncCollection(updated, entity.Properties, cancellation);
 
             return updated ?? throw new KeyNotFoundException($"El Grupo {entity.Id}-{entity.Name} no encontrado para la Variante {parent.Id}-{parent.Name}.");
             

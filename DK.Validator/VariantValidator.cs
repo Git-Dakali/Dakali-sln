@@ -73,13 +73,13 @@ namespace DK.Validator
 
         public async Task Attributes(Product product, Variant variant, CancellationToken cancellationToken = default)
         {
-            if (variant.AttributeGroups is null)
+            if (variant.PropertyGroups is null)
                 throw new Exception("No tiene configurado los grupos.");
 
-            if (variant.AttributeGroups.Count() == 0)
+            if (variant.PropertyGroups.Count() == 0)
                 throw new Exception("No tiene configurado los grupos.");
 
-            var groups = variant.AttributeGroups.ToDictionary(x => x.Name.ToUpper());
+            var groups = variant.PropertyGroups.ToDictionary(x => x.Name.ToUpper());
 
             foreach (var fieldGroup in product.Model.FieldGroups)
             {
@@ -87,7 +87,7 @@ namespace DK.Validator
                 if (!groups.ContainsKey(fieldGroup.Name.ToUpper()))
                     throw new Exception($"No tiene configurado el grupo {fieldGroup.Name}");
 
-                var properties = groups[fieldGroup.Name.ToUpper()].Attributes.ToDictionary(a => a.Field.ToUpper());
+                var properties = groups[fieldGroup.Name.ToUpper()].Properties.ToDictionary(a => a.Field.ToUpper());
 
                 foreach (var field in fieldGroup.Fields)
                 {

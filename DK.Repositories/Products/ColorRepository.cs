@@ -87,6 +87,7 @@ namespace DK.Repositories.Products
         public async override Task<bool> HasChanges(Color entity, Color persited)
         {
             return entity.Id != persited.Id ||
+                entity.Name != persited.Name ||
                 entity.Hex != persited.Hex ||
                 entity.SortOrder != persited.SortOrder ||
                 await _colorImageRepository.HasChanges(persited, entity.Images);
@@ -97,6 +98,7 @@ namespace DK.Repositories.Products
             const string sql = @"
                 UPDATE dbo.Color
                    SET Hex      = @Hex,
+                       Name     = @Name,
                        SortOrder   = @SortOrder,
                        SearchString = @SearchString,
                        UpdateDate  = SYSUTCDATETIME(),
@@ -106,7 +108,7 @@ namespace DK.Repositories.Products
 
             entity.SearchString = entity.ToString();
             var updated = await _session.Connection.QuerySingleOrDefaultAsync<Color>(
-                new CommandDefinition(sql, new { VariantId = parent.Id, entity.Id, entity.Hex, entity.SortOrder, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
+                new CommandDefinition(sql, new { VariantId = parent.Id, entity.Id, entity.Name, entity.Hex, entity.SortOrder, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
 
             if (updated != null)
                 updated.Images = await _colorImageRepository.SyncCollection(entity, entity.Images, cancellation);

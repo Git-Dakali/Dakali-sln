@@ -2,12 +2,12 @@
 
 namespace DK.Domain.Products
 {
-    public class Attribute : EntityGuid
+    public class Property : EntityGuid
     {
         public string Field { get; set; }
         public string Value { get; set; }
 
-        public Attribute()
+        public Property()
         {
             Field = string.Empty;
             Value = string.Empty;

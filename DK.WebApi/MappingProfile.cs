@@ -9,10 +9,10 @@ namespace DK.WebApi
     {
         public MappingProfile() 
         {
-            CreateMap<AttributeGroupRequest, AttributeGroup>();
-            CreateMap<AttributeGroup, AttributeGroupResponse>();
-            CreateMap<AttributeRequest, Domain.Products.Attribute>();
-            CreateMap<Domain.Products.Attribute, AttributeResponse>();
+            CreateMap<PropertyGroupRequest, PropertyGroup>();
+            CreateMap<PropertyGroup, PropertyGroupResponse>();
+            CreateMap<PropertyRequest, Property>();
+            CreateMap<Property, PropertyResponse>();
             CreateMap<CategoryRequest, Category>();
             CreateMap<Category, CategoryResponse>();
             CreateMap<ColorRequest, Color>();
@@ -27,8 +27,6 @@ namespace DK.WebApi
             CreateMap<Model, ModelResponse>();
             CreateMap<ProductRequest, Product>();
             CreateMap<Product, ProductResponse>();
-            CreateMap<SizeRequest, Size>();
-            CreateMap<Size, SizeResponse>();
             CreateMap<StoredFileRequest, StoredFile>();
             CreateMap<StoredFile, StoredFileResponse>();
             CreateMap<VariantRequest, Variant>();

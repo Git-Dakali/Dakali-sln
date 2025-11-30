@@ -75,15 +75,15 @@ namespace DK.Validator
             if (product.Variants.Count() == 0)
                 throw new Exception("Debe ingresar variantes.");
 
-            if(product.Model.Sizes.Count() != product.Variants.Count())
-                throw new Exception("Los tamaños del modelo, no estan todos configurado como variante en el producto.");
+            if(product.Model.VariantNames.Count() != product.Variants.Count())
+                throw new Exception("Las variantes del modelo, no estan todos configurado como variante en el producto.");
 
-            foreach (var size in product.Model.Sizes)
+            foreach (var variantName in product.Model.VariantNames)
             {
-                var variant = product.Variants.FirstOrDefault(v => v.Name.ToUpper() == size.Name.ToUpper());
+                var variant = product.Variants.FirstOrDefault(v => v.Name.ToUpper() == variantName.ToUpper());
 
                 if (variant is null)
-                    throw new Exception($"El tamaño {size.Name}, no existe como una variante.");
+                    throw new Exception($"La variante {variantName}, no existe como una variante en el Modelo.");
             }
         }
     }

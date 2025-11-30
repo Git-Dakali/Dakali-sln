@@ -7,8 +7,8 @@ namespace DK.Repositories
     {
         public static void Configure(IServiceCollection service)
         {
-            service.AddScoped<AttributeGroupRepository>();
-            service.AddScoped<AttributeRepository>();
+            service.AddScoped<PropertyGroupRepository>();
+            service.AddScoped<PropertyRepository>();
             service.AddScoped<CategoryRepository>();
             service.AddScoped<ColorRepository>();
             service.AddScoped<FieldGroupRepository>();
@@ -16,7 +16,7 @@ namespace DK.Repositories
             service.AddScoped<ColorImageRepository>();
             service.AddScoped<ModelRepository>();
             service.AddScoped<ProductRepository>();
-            service.AddScoped<SizeRepository>();
+            service.AddScoped<Model_VariantNameRepository>();
             service.AddScoped<StoredFileRepository>();
             service.AddScoped<VariantRepository>();
         }

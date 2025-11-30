@@ -13,6 +13,7 @@ namespace DK.Domain.Products
         {
             Name = string.Empty;
             Fields = new List<Field>();
+            SortOrder = 1;
         }
 
         public override string ToString()

@@ -72,19 +72,19 @@ namespace DK.Validator
 
         public async Task Sizes(Model model, CancellationToken cancellationToken = default)
         {
-            if (model.Sizes is null)
+            if (model.VariantNames is null)
                 throw new Exception("La lista de tamaños esta vacío.");
 
-            if (!model.Sizes.Any())
+            if (!model.VariantNames.Any())
                 throw new Exception("La lista de tamaños esta vacío.");
 
-            var group = model.Sizes.GroupBy(s => s.Name);
+            var group = model.VariantNames.GroupBy(name => name);
 
             if (!group.Any(g => g.Count() > 1))
                 return;
 
             var key = group.FirstOrDefault(g => g.Count() > 1).Key;
-            throw new Exception($"Existen tamaños duplicados {key}.");
+            throw new Exception($"Existen variantes duplicados {key}.");
 
         }
 

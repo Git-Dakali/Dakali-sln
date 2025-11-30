@@ -9,6 +9,12 @@ namespace DK.Domain.Products
         public bool IsPrimary { get; set; }
         public int SortOrder { get; set; }
 
+        public Image()
+        { 
+            IsPrimary = false;
+            SortOrder = 1;
+        }
+
         public override string ToString()
         {
             return $"{File?.FileName ?? string.Empty}";

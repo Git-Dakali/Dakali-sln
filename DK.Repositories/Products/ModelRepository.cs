@@ -15,14 +15,14 @@ namespace DK.Repositories.Products
         private ISession _session;
         private CategoryRepository _categoryRepository;
         private FieldGroupRepository _fieldGroupRepository;
-        private SizeRepository _sizeRepository;
+        private Model_VariantNameRepository _variantNameRepository;
 
-        public ModelRepository(ISession session, CategoryRepository categoryRepository, FieldGroupRepository fieldGroupRepository, SizeRepository sizeRepository)
+        public ModelRepository(ISession session, CategoryRepository categoryRepository, FieldGroupRepository fieldGroupRepository, Model_VariantNameRepository sizeRepository)
         {
             _session = session;
             _categoryRepository = categoryRepository;
             _fieldGroupRepository = fieldGroupRepository;
-            _sizeRepository = sizeRepository;
+            _variantNameRepository = sizeRepository;
         }
 
         public async Task<Model> Create(Model entity, CancellationToken cancellation = default)
@@ -38,7 +38,7 @@ namespace DK.Repositories.Products
             if (model != null)
             { 
                 model.FieldGroups = await _fieldGroupRepository.SyncCollection(model, entity.FieldGroups, cancellation);
-                model.Sizes = await _sizeRepository.SyncCollection(model, entity.Sizes, cancellation);
+                model.VariantNames = await _variantNameRepository.SyncCollection(model, entity.VariantNames, cancellation);
             }
 
             return model;
@@ -82,7 +82,7 @@ namespace DK.Repositories.Products
                 newModel.IsDeleted = rowDapper.IsDeleted;
                 newModel.Guid = rowDapper.Guid;
                 newModel.Version = rowDapper.Version;
-                newModel.Sizes = await _sizeRepository.Get(newModel, cancellation);
+                newModel.VariantNames = await _variantNameRepository.Get(newModel, cancellation);
                 newModel.FieldGroups = await _fieldGroupRepository.Get(newModel);
                 newModel.Category = await _categoryRepository.Get(rowDapper.CategoryId);
 
@@ -98,26 +98,26 @@ namespace DK.Repositories.Products
                 select *
                 from dbo.Model 
                 where IsDeleted = 0 AND Id = @Id";
-            var model = await _session.Connection.QuerySingleOrDefaultAsync<dynamic>(query, new { Id = id }, transaction: _session.Transaction);
+            var rowDapper = await _session.Connection.QuerySingleOrDefaultAsync<dynamic>(query, new { Id = id }, transaction: _session.Transaction);
 
-            if (model == null)
+            if (rowDapper == null)
                 return null;
 
-            var rowDapper = new Model();
-            rowDapper.Id = model.Id;
-            rowDapper.Code = model.Code;
-            rowDapper.SearchString = model.SearchString;
-            rowDapper.CreationDate = model.CreationDate;
-            rowDapper.UpdateDate = model.UpdateDate;
-            rowDapper.RemoveDate = model.RemoveDate;
-            rowDapper.IsDeleted = model.IsDeleted;
-            rowDapper.Guid = model.Guid;
-            rowDapper.Version = model.Version;
-            rowDapper.Sizes = await _sizeRepository.Get(rowDapper, cancellation);
-            rowDapper.FieldGroups = await _fieldGroupRepository.Get(rowDapper);
-            rowDapper.Category = await _categoryRepository.Get(model.CategoryId);
+            var newModel = new Model();
+            newModel.Id = rowDapper.Id;
+            newModel.Code = rowDapper.Code;
+            newModel.SearchString = rowDapper.SearchString;
+            newModel.CreationDate = rowDapper.CreationDate;
+            newModel.UpdateDate = rowDapper.UpdateDate;
+            newModel.RemoveDate = rowDapper.RemoveDate;
+            newModel.IsDeleted = rowDapper.IsDeleted;
+            newModel.Guid = rowDapper.Guid;
+            newModel.Version = rowDapper.Version;
+            newModel.VariantNames = await _variantNameRepository.Get(newModel, cancellation);
+            newModel.FieldGroups = await _fieldGroupRepository.Get(newModel, cancellation);
+            newModel.Category = await _categoryRepository.Get(rowDapper.CategoryId, cancellation);
 
-            return rowDapper;
+            return newModel;
         }
 
         public async Task<Model> Get(string code, CancellationToken cancellation = default)
@@ -140,9 +140,9 @@ namespace DK.Repositories.Products
             newModel.IsDeleted = rowDapper.IsDeleted;
             newModel.Guid = rowDapper.Guid;
             newModel.Version = rowDapper.Version;
-            newModel.Sizes = await _sizeRepository.Get(newModel, cancellation);
-            newModel.FieldGroups = await _fieldGroupRepository.Get(newModel);
-            newModel.Category = await _categoryRepository.Get(rowDapper.CategoryId);
+            newModel.VariantNames = await _variantNameRepository.Get(newModel, cancellation);
+            newModel.FieldGroups = await _fieldGroupRepository.Get(newModel, cancellation);
+            newModel.Category = await _categoryRepository.Get(rowDapper.CategoryId, cancellation);
 
             return newModel;
         }
@@ -163,9 +163,9 @@ namespace DK.Repositories.Products
             entity.SearchString = entity.ToString();
             await _session.Connection.QuerySingleAsync<Model>(query, new { entity.Id, CategoryId = entity.Category.Id, entity.SearchString}, transaction: _session.Transaction);
             await _fieldGroupRepository.SyncCollection(entity, entity.FieldGroups, cancellation);
-            await _sizeRepository.SyncCollection(entity, entity.Sizes, cancellation);
+            await _variantNameRepository.SyncCollection(entity, entity.VariantNames, cancellation);
 
-            return await Get(entity.Id, cancellation) ?? throw new KeyNotFoundException($"Model {entity.Code}-{entity.Category.Name} no encontrado para actualizar.");
+            return await Get(entity.Id, cancellation) ?? throw new KeyNotFoundException($"Model {entity.Code}-{entity.Category.Name} no se encontro para actualizar.");
         }
     }
 }

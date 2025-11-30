@@ -7,17 +7,17 @@ namespace DK.Domain.Products
     {
         public Category Category { get; set; }
         public IEnumerable<FieldGroup> FieldGroups { get; set; }
-        public IEnumerable<Size> Sizes { get; set; }
+        public IEnumerable<string> VariantNames { get; set; }
 
         public Model() 
         {
             FieldGroups = new List<FieldGroup>();
-            Sizes = new List<Size>();
+            VariantNames = new List<string>();
         }
 
         public override string ToString()
         {
-            return $"{Code} [{string.Join(", ", Sizes)}]";
+            return $"{Code} [ {string.Join(", ", VariantNames)} ]";
         }
     }
 }

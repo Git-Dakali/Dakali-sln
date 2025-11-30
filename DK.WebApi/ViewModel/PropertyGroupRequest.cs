@@ -2,10 +2,10 @@
 
 namespace DK.WebApi.ViewModel
 {
-    public class AttributeGroupRequest : RequestGuid
+    public class PropertyGroupRequest : RequestGuid
     {
         public string Name { get; set; }
         public int SortOrder { get; set; }
-        public IEnumerable<AttributeRequest> Attributes { get; set; }
+        public IEnumerable<PropertyRequest> Properties { get; set; }
     }
 }

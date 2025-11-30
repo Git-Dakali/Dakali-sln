@@ -119,20 +119,10 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
 
             ");
             SQLs.Add(@"
-                CREATE TABLE dbo.Size (
+                CREATE TABLE dbo.Model_VariantName (
                   Id             BIGINT IDENTITY(1,1) PRIMARY KEY,
-                  SearchString  Text NOT NULL,
-                  CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-                  RemoveDate    DATETIME2 NULL,
-                  UpdateDate    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-                  Version       BIGINT    NOT NULL DEFAULT 1,
-                  Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
-                  IsDeleted     BIT NOT NULL DEFAULT 0,
-                  ModelId BIGINT NOT NULL
-                      CONSTRAINT FK_Size_Model
-                      REFERENCES dbo.Model(Id),
-                  [Name]         NVARCHAR(50) NOT NULL,
-                  SortOrder      INT NOT NULL
+                  ModelId BIGINT NOT NULL CONSTRAINT FK_VariantName_Model REFERENCES dbo.Model(Id),
+                  [Name]         NVARCHAR(100) NOT NULL
                 );
             ");
             SQLs.Add(@"
@@ -171,7 +161,8 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   [Name]        NVARCHAR(50)  NOT NULL,
                   SalePrice     DECIMAL(18,2) NOT NULL DEFAULT 0,
                   Price         DECIMAL(18,2) NOT NULL DEFAULT 0,
-                  Active        BIT NOT NULL DEFAULT 1
+                  Active        BIT NOT NULL DEFAULT 1,
+                  SortOrder     INT NOT NULL,
                 );
 
                 CREATE INDEX IX_Variant_ProductId ON dbo.Variant(ProductId);
@@ -221,27 +212,27 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
             ");
 
             SQLs.Add(@"
-                CREATE TABLE dbo.AttributeGroup (
-                    Id           BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_AttributeGroup PRIMARY KEY,
+                CREATE TABLE dbo.PropertyGroup (
+                    Id           BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_PropertyGroup PRIMARY KEY,
                     SearchString  Text NOT NULL,
-                    CreationDate DATETIME2(3) NOT NULL CONSTRAINT DF_AttributeGroup_CreationDate DEFAULT (SYSUTCDATETIME()),
+                    CreationDate DATETIME2(3) NOT NULL CONSTRAINT DF_PropertyGroup_CreationDate DEFAULT (SYSUTCDATETIME()),
                     UpdateDate   DATETIME2(3) NULL,
                     RemoveDate   DATETIME2(3) NULL,
-                    [Version]    INT NOT NULL CONSTRAINT DF_AttributeGroup_Version DEFAULT (1),
-                    [Guid]       UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_AttributeGroup_Guid DEFAULT (NEWID()),
-                    IsDeleted    BIT NOT NULL CONSTRAINT DF_AttributeGroup_IsDeleted DEFAULT (0),
+                    [Version]    INT NOT NULL CONSTRAINT DF_PropertyGroup_Version DEFAULT (1),
+                    [Guid]       UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_PropertyGroup_Guid DEFAULT (NEWID()),
+                    IsDeleted    BIT NOT NULL CONSTRAINT DF_PropertyGroup_IsDeleted DEFAULT (0),
                     VariantId BIGINT NOT NULL
-                        CONSTRAINT FK_AttributeGroup_Variant
+                        CONSTRAINT FK_PropertyGroup_Variant
                         REFERENCES dbo.Variant(Id),
                     [Name]       NVARCHAR(150) NOT NULL,
                     SortOrder    INT NOT NULL
                 );
 
-                CREATE INDEX IX_Attribute_VariantId ON dbo.AttributeGroup(VariantId);
+                CREATE INDEX IX_Property_VariantId ON dbo.PropertyGroup(VariantId);
             ");
 
             SQLs.Add(@"
-                CREATE TABLE dbo.Attribute (
+                CREATE TABLE dbo.Property (
                   Id            BIGINT IDENTITY(1,1) PRIMARY KEY,
                   SearchString  Text NOT NULL,
                   CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
@@ -250,15 +241,15 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   Version       BIGINT    NOT NULL DEFAULT 1,
                   Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
                   IsDeleted     BIT NOT NULL DEFAULT 0,
-                  AttributeGroupId     BIGINT NOT NULL
-                      CONSTRAINT FK_Attribute_AttributeGroup
-                      REFERENCES dbo.AttributeGroup(Id),
+                  PropertyGroupId     BIGINT NOT NULL
+                      CONSTRAINT FK_Property_PropertyGroup
+                      REFERENCES dbo.PropertyGroup(Id),
                   [Field]       NVARCHAR(150)  NOT NULL,
                   [Value]       NVARCHAR(4000) NOT NULL
                 );
 
-                CREATE INDEX IX_Attribute_AttributeGroupId ON dbo.Attribute(AttributeGroupId);
-                CREATE INDEX IX_Attribute_Field     ON dbo.Attribute([Field]);
+                CREATE INDEX IX_Property_PropertyGroupId ON dbo.Property(PropertyGroupId);
+                CREATE INDEX IX_Property_Field     ON dbo.Property([Field]);
             ");
         }
     }

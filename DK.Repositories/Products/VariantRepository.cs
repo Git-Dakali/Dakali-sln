@@ -12,10 +12,10 @@ namespace DK.Repositories.Products
     public class VariantRepository : RepositoryReferenceEntity<Product, Variant>
     {
         private readonly ISession _session;
-        private readonly AttributeGroupRepository _attributeGroupRepository;
+        private readonly PropertyGroupRepository _attributeGroupRepository;
         private readonly ColorRepository _colorRepository;
 
-        public VariantRepository(ISession session, AttributeGroupRepository attributeGroupRepository, ColorRepository colorRepository)
+        public VariantRepository(ISession session, PropertyGroupRepository attributeGroupRepository, ColorRepository colorRepository)
         {
             _session = session;
             _attributeGroupRepository = attributeGroupRepository;
@@ -25,14 +25,14 @@ namespace DK.Repositories.Products
         public async override Task<Variant> Create(Product parent, Variant entity, CancellationToken cancellation = default)
         {
             const string sql = @"
-                INSERT INTO dbo.Variant (ProductId, [Name], Price, SalePrice, Active, SearchString)
+                INSERT INTO dbo.Variant (ProductId, [Name], Price, SalePrice, Active, SortOrder, SearchString)
                 OUTPUT INSERTED.*
-                VALUES (@ProductId, @Name, @Price, @SalePrice, @Active, @SearchString);";
+                VALUES (@ProductId, @Name, @Price, @SalePrice, @Active, @SortOrder, @SearchString);";
 
             entity.SearchString = entity.ToString();
             var variant = await _session.Connection.QuerySingleAsync<Variant>(
-                new CommandDefinition(sql, new { ProductId = parent.Id, entity.Name, entity.Price, entity.SalePrice, entity.Active, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
-            variant.AttributeGroups = await _attributeGroupRepository.SyncCollection(variant, entity.AttributeGroups, cancellation);
+                new CommandDefinition(sql, new { ProductId = parent.Id, entity.Name, entity.Price, entity.SalePrice, entity.Active, entity.SearchString, entity.SortOrder }, _session.Transaction, cancellationToken: cancellation));
+            variant.PropertyGroups = await _attributeGroupRepository.SyncCollection(variant, entity.PropertyGroups, cancellation);
             variant.ColorsHex = await _colorRepository.SyncCollection(variant, entity.ColorsHex, cancellation);
             return variant;
         }
@@ -50,7 +50,7 @@ namespace DK.Repositories.Products
             await _session.Connection.ExecuteAsync(
                 new CommandDefinition(sql, new { ProductId = parent.Id, entity.Id }, _session.Transaction, cancellationToken: cancellation));
 
-            await _attributeGroupRepository.Delete(entity, entity.AttributeGroups);
+            await _attributeGroupRepository.Delete(entity, entity.PropertyGroups);
             await _colorRepository.Delete(entity, entity.ColorsHex);
 
         }
@@ -76,7 +76,7 @@ namespace DK.Repositories.Products
 
             if (variant != null)
             { 
-                variant.AttributeGroups = (await _attributeGroupRepository.Get(variant)).ToList();
+                variant.PropertyGroups = (await _attributeGroupRepository.Get(variant)).ToList();
                 variant.ColorsHex = await _colorRepository.Get(variant);
             }
 
@@ -95,7 +95,7 @@ namespace DK.Repositories.Products
 
             foreach (var variant in variants)
             {
-                variant.AttributeGroups = await _attributeGroupRepository.Get(variant);
+                variant.PropertyGroups = await _attributeGroupRepository.Get(variant);
                 variant.ColorsHex = await _colorRepository.Get(variant);
             }
 
@@ -120,6 +120,7 @@ namespace DK.Repositories.Products
                        Price        = @Price,
                        SalePrice    = @SalePrice,
                        Active       = @Active,
+                       SortOrder    = @SortOrder, 
                        SearchString = @SearchString,
                        UpdateDate   = SYSUTCDATETIME(),
                        Version      = Version + 1
@@ -128,11 +129,11 @@ namespace DK.Repositories.Products
 
             entity.SearchString = entity.ToString();
             var updated = await _session.Connection.QuerySingleOrDefaultAsync<Variant>(
-                new CommandDefinition(sql, new { ProductId = parent.Id, entity.Id, entity.Name, entity.Price, entity.SalePrice, entity.Active, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
+                new CommandDefinition(sql, new { ProductId = parent.Id, entity.Id, entity.Name, entity.Price, entity.SalePrice, entity.Active, entity.SearchString, entity.SortOrder }, _session.Transaction, cancellationToken: cancellation));
 
             if (updated != null)
             { 
-                updated.AttributeGroups = await _attributeGroupRepository.SyncCollection(entity, entity.AttributeGroups, cancellation);
+                updated.PropertyGroups = await _attributeGroupRepository.SyncCollection(entity, entity.PropertyGroups, cancellation);
                 updated.ColorsHex = await _colorRepository.SyncCollection(entity, entity.ColorsHex, cancellation);
             }
 

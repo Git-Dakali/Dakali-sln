@@ -6,6 +6,6 @@ namespace DK.WebApi.ViewModel
     {
         public CategoryResponse Category { get; set; }
         public IEnumerable<FieldGroupResponse> FieldGroups { get; set; }
-        public List<SizeResponse> Sizes { get; set; }
+        public List<string> VariantNames { get; set; }
     }
 }
