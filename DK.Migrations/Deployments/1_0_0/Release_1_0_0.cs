@@ -251,6 +251,49 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                 CREATE INDEX IX_Property_PropertyGroupId ON dbo.Property(PropertyGroupId);
                 CREATE INDEX IX_Property_Field     ON dbo.Property([Field]);
             ");
+
+            SQLs.Add(@"
+                CREATE TABLE dbo.StockState (
+                  Id            BIGINT IDENTITY(1,1) PRIMARY KEY,
+                  SearchString  Text NOT NULL,
+                  Code          NVARCHAR(64)  NOT NULL UNIQUE,
+                  CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  RemoveDate    DATETIME2 NULL,
+                  UpdateDate    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  Version       BIGINT    NOT NULL DEFAULT 1,
+                  Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+                  IsDeleted     BIT NOT NULL DEFAULT 0,
+                  Name          NVARCHAR(200) NOT NULL
+                );
+            ");
+
+            SQLs.Add(@"
+                CREATE TABLE dbo.Stock (
+                    Id            BIGINT IDENTITY(1,1) PRIMARY KEY,
+                    SearchString  Text NOT NULL,
+                    CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                    RemoveDate    DATETIME2 NULL,
+                    UpdateDate    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                    Version       BIGINT    NOT NULL DEFAULT 1,
+                    Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+                    IsDeleted     BIT NOT NULL DEFAULT 0,
+                    ProductId     BIGINT NOT NULL CONSTRAINT FK_Stock_Product REFERENCES dbo.Product(Id),
+                    VariantId     BIGINT NOT NULL CONSTRAINT FK_Stock_Variant REFERENCES dbo.Variant(Id),
+                    ColorId       BIGINT NOT NULL CONSTRAINT FK_Stock_Color REFERENCES dbo.Color(Id),
+                    StockStateId  BIGINT NOT NULL CONSTRAINT FK_Stock_State REFERENCES dbo.StockState(Id),
+                    Physical      BIGINT   NOT NULL,
+                    Reserved      BIGINT   NOT NULL,
+                    Transit       BIGINT   NOT NULL,
+                    Free          BIGINT   NOT NULL,
+                    Minimum       BIGINT   NOT NULL,
+                    Maximum       BIGINT   NOT NULL
+                );
+
+                CREATE INDEX IX_Stock_ProductId ON dbo.Stock(ProductId);
+                CREATE INDEX IX_Stock_VariantId ON dbo.Stock(VariantId);
+                CREATE INDEX IX_Stock_ColorId   ON dbo.Stock(ColorId);
+                CREATE INDEX IX_Stock_StateId   ON dbo.Stock(StockStateId);
+            ");
         }
     }
 }

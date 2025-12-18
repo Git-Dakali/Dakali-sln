@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DK.WebApi.Controllers
 {
-    public class ModelController
+    [ApiController]
+    [Route("[controller]")]
+    public class ModelController : ControllerBase
     {
         private readonly IMapper _mapper;
         private ModelProcess _modelProcess;

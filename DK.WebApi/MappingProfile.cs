@@ -31,6 +31,10 @@ namespace DK.WebApi
             CreateMap<StoredFile, StoredFileResponse>();
             CreateMap<VariantRequest, Variant>();
             CreateMap<Variant, VariantResponse>();
+            CreateMap<StockStateRequest, StockState>();
+            CreateMap<StockState, StockStateResponse>();
+            CreateMap<StockRequest, Stock>();
+            CreateMap<Stock, StockResponse>();
         }
     }
 }

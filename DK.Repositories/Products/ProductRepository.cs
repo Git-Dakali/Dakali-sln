@@ -110,7 +110,7 @@ namespace DK.Repositories.Products
             product.IsDeleted = rowProduct.IsDeleted;
             product.Guid = rowProduct.Guid;
             product.Version = rowProduct.Version;
-            product.Name = rowProduct.Code;
+            product.Name = rowProduct.Name;
             product.Description = rowProduct.Description;
             product.Model = await _modelRepository.Get(rowProduct.ModelId);
             product.Variants = await _variantRepository.Get(product);

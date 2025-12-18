@@ -19,6 +19,8 @@ namespace DK.Repositories
             service.AddScoped<Model_VariantNameRepository>();
             service.AddScoped<StoredFileRepository>();
             service.AddScoped<VariantRepository>();
+            service.AddScoped<StockStateRepository>();
+            service.AddScoped<StockRepository>();
         }
     }
 }
