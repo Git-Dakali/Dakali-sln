@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Dakali.Domine;
+using DK.Domain.Locations;
 using DK.Domain.Products;
 using DK.WebApi.ViewModel;
 
@@ -31,8 +32,16 @@ namespace DK.WebApi
             CreateMap<StoredFile, StoredFileResponse>();
             CreateMap<VariantRequest, Variant>();
             CreateMap<Variant, VariantResponse>();
-            CreateMap<StockStateRequest, StockState>();
-            CreateMap<StockState, StockStateResponse>();
+            CreateMap<LocationStateRequest, LocationState>();
+            CreateMap<LocationState, LocationStateResponse>();
+            CreateMap<LocationRequest, Location>();
+            CreateMap<Location, LocationResponse>();
+            CreateMap<HallwayRequest, Hallway>();
+            CreateMap<Hallway, HallwayResponse>();
+            CreateMap<ColumnRequest, Column>();
+            CreateMap<Column, ColumnResponse>();
+            CreateMap<LevelRequest, Level>();
+            CreateMap<Level, LevelResponse>();
             CreateMap<StockRequest, Stock>();
             CreateMap<Stock, StockResponse>();
         }

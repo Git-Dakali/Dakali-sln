@@ -1,4 +1,5 @@
-﻿using DK.Repositories.Products;
+﻿using DK.Repositories.Locations;
+using DK.Repositories.Products;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DK.Repositories
@@ -19,8 +20,12 @@ namespace DK.Repositories
             service.AddScoped<Model_VariantNameRepository>();
             service.AddScoped<StoredFileRepository>();
             service.AddScoped<VariantRepository>();
-            service.AddScoped<StockStateRepository>();
+            service.AddScoped<LocationStateRepository>();
             service.AddScoped<StockRepository>();
+            service.AddScoped<HallwayRepository>();
+            service.AddScoped<ColumnRepository>();
+            service.AddScoped<LevelRepository>();
+            service.AddScoped<LocationRepository>();
         }
     }
 }

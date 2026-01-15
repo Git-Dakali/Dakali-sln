@@ -29,10 +29,22 @@
                 else
                     await session.Rollback(context.RequestAborted);
             }
-            catch
+            catch(Exception ex)
             {
                 await session.Rollback(context.RequestAborted);
-                throw;
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                context.Response.ContentType = "application/json";
+
+                var error = new { 
+                    message = ex.Message,
+                    detail = ex.StackTrace
+                };
+
+                var json = System.Text.Json.JsonSerializer.Serialize(error);
+
+                await context.Response.WriteAsync(json);
+
+                return;
             }
             finally
             {

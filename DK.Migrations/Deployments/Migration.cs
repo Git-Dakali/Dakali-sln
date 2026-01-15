@@ -1,5 +1,4 @@
-﻿using Dakali.Domine.Connection;
-using Dakali.Interface.Connection;
+﻿using Dakali.Interface.Connection;
 
 namespace DK.DatabaseMigrations.Deployments
 {
@@ -19,16 +18,16 @@ namespace DK.DatabaseMigrations.Deployments
             Summary = sumary;
         }
 
-        public abstract void BasicRun();
+        public abstract Task BasicRun();
 
-        public override void Run()
+        public async override Task Run()
         {
             //CTX.CM.Log().Info("Running JIRA Issue [" + GetType().Name.Replace("__", "/").Replace('_', '-') + "]" + Summary);
             //if (CTX.CM.Session().ExistsCode<JiraIssueMigrationExecution>(Execution.Code))
             //throw new Exception($"Jira Issue Already Runned [{Execution.Code}] {Execution.Summary}");
             //Execution.Start = DateTime.Now;
-            RunSqlStatements();
-            BasicRun();
+            await RunSqlStatements();
+            await BasicRun();
             //Execution.Finish = DateTime.Now;
             //CTX.CM.Session().Add(Execution);
             //CTX.CM.Log().Info("Running JIRA Issue [" + GetType().Name.Replace("__", "/").Replace('_', '-') + "]" + Summary + " succesfully executed");

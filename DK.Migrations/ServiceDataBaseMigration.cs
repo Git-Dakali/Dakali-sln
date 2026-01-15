@@ -24,7 +24,8 @@ namespace DK.DatabaseMigrations
 
             try
             {
-                new Release_1_0_0(session).Run();
+                var release_1_0_0 = _serviceProvider.GetService<Release_1_0_0>();
+                await release_1_0_0.Run();
                 await session.Commit();
 
                 logger.LogInformation("Database migration completed successfully.");

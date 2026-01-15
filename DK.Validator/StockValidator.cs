@@ -1,4 +1,5 @@
 ﻿using DK.Domain.Products;
+using DK.Repositories.Locations;
 using DK.Repositories.Products;
 using System;
 using System.Linq;
@@ -11,11 +12,13 @@ namespace DK.Validator
     {
         public StockRepository _stockRepository;
         public ProductRepository _productRepository;
+        public LocationRepository _locationRepository;
 
-        public StockValidator(StockRepository stockRepository, ProductRepository productRepository)
+        public StockValidator(StockRepository stockRepository, ProductRepository productRepository, LocationRepository locationRepository)
         {
             _stockRepository = stockRepository ?? throw new ArgumentNullException("StockRepository");
             _productRepository = productRepository ?? throw new ArgumentNullException("ProductRepository");
+            _locationRepository = locationRepository ?? throw new ArgumentNullException("LocationRepository");
         }
 
         public async Task Create(Stock stock, CancellationToken cancellationToken = default)
@@ -28,23 +31,23 @@ namespace DK.Validator
             await Free(stock, cancellationToken);
             await Minimum(stock, cancellationToken);
             await Maximum(stock, cancellationToken);
-            await Status(stock, cancellationToken);
+            await Location(stock, cancellationToken);
+
+            var stockPersisted = await _stockRepository.Get(stock.Product, stock.Variant, stock.Color, stock.Location, cancellationToken);
+
+            if (stockPersisted is null)
+                return;
+
+            throw new Exception($"El Stock {stock.Product.Name}-{stock.Variant.Name}-{stock.Color.Name} ya existe para la ubicacion {stock.Location.Hallway.Name}-{stock.Location.Column.Name}-{stock.Location.Level.Name}");
         }
 
-        public async Task Update(Stock stock, CancellationToken cancellationToken = default)
+        public async Task StockEntry(Stock stock, int amount, CancellationToken cancellationToken = default)
         {
             if (!(await Exist(stock, cancellationToken)))
                 throw new Exception($"No existe el stock {stock.Product.Name}-{stock.Variant.Name}-{stock.Color.Name}");
 
-            await Product(stock, cancellationToken);
-            await Variant(stock, cancellationToken);
-            await Color(stock, cancellationToken);
-            await Physical(stock, cancellationToken);
-            await Reserved(stock, cancellationToken);
-            await Free(stock, cancellationToken);
-            await Minimum(stock, cancellationToken);
-            await Maximum(stock, cancellationToken);
-            await Status(stock, cancellationToken);
+            if (amount <= 0)
+                throw new Exception($"De ingresar una cantidad.");
         }
 
         public async Task Delete(Stock stock, CancellationToken cancellationToken = default)
@@ -140,8 +143,16 @@ namespace DK.Validator
                 throw new Exception("El stock maximo, no puede ser un valor negativo");
         }
 
-        public async Task Status(Stock stock, CancellationToken cancellationToken = default)
+        public async Task Location(Stock stock, CancellationToken cancellationToken = default)
         {
+            if (stock.Location is null)
+                throw new Exception("La ubicacion esta vacio.");
+
+            var locationPersisted = await _locationRepository.Get(stock.Location.Id, cancellationToken);
+
+            if (locationPersisted is null)
+                throw new Exception($"La ubicacion {stock.Location.Hallway?.Name ?? string.Empty}-{stock.Location.Column?.Name ?? string.Empty}-{stock.Location.Level?.Name ?? string.Empty} no existe.");
+
         }
     }
 }

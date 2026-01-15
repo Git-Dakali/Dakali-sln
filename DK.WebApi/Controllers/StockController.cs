@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using DK.Domain.Products;
 using DK.Process.Product;
+using DK.WebApi.Filters;
 using DK.WebApi.ViewModel;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,11 +20,11 @@ namespace DK.WebApi.Controllers
             _mapper = mapper;
         }
 
-        [HttpGet("GetAll")]
-        public async Task<IEnumerable<StockResponse>> GetAll()
+        [HttpPost("GetAll")]
+        public async Task<IEnumerable<StockResponse>> GetAll([FromBody] StockFilter stockFilter)
         {
-            var categories = await _stockProcess.GetAll();
-            return _mapper.Map<IEnumerable<StockResponse>>(categories);
+            var stocks = await _stockProcess.GetAll(stockFilter.SearchString);
+            return _mapper.Map<IEnumerable<StockResponse>>(stocks);
         }
 
         [HttpGet("GetById")]
@@ -40,11 +41,10 @@ namespace DK.WebApi.Controllers
             return _mapper.Map<StockResponse>(stock);
         }
 
-        [HttpPost("Update")]
-        public async Task<StockResponse> Update([FromBody] StockRequest data)
+        [HttpPost("StockEntry")]
+        public async Task StockEntry([FromBody] StockEntryRequest data)
         {
-            var stock = await _stockProcess.Update(_mapper.Map<Stock>(data));
-            return _mapper.Map<StockResponse>(stock);
+            await _stockProcess.StockEntry(_mapper.Map<Stock>(data.Stock), data.Amount);
         }
 
         [HttpPost("Delete")]

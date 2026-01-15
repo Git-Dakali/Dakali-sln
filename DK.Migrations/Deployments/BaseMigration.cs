@@ -14,7 +14,7 @@ namespace DK.DatabaseMigrations.Deployments
             _session = session;
         }
 
-        protected int ExecuteCommand(string sql, object? param = null, int? timeoutSeconds = null)
+        protected async Task<int> ExecuteCommand(string sql, object? param = null, int? timeoutSeconds = null)
         {
             var cmd = new CommandDefinition(
                 commandText: sql,
@@ -22,19 +22,20 @@ namespace DK.DatabaseMigrations.Deployments
                 transaction: _session.Transaction,               // ← IMPORTANTE
                 commandTimeout: timeoutSeconds);
 
-            return _session.Connection.Execute(cmd);
+            return await _session.Connection.ExecuteAsync(cmd);
         }
 
         // si tenías un método que recorre SQLs:
-        protected void RunSqlStatements()
+        protected async Task RunSqlStatements()
         {
             foreach (var sql in SQLs)
             {
-                if (string.IsNullOrWhiteSpace(sql)) continue;
-                ExecuteCommand(sql);
+                if (string.IsNullOrWhiteSpace(sql)) 
+                    continue;
+                await ExecuteCommand(sql);
             }
         }
 
-        public abstract void Run();
+        public abstract Task Run();
     }
 }

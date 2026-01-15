@@ -2,7 +2,7 @@
 
 namespace DK.WebApi.ViewModel
 {
-    public class StockStateResponse : ResponseCode
+    public class LevelRequest : RequestCode
     {
         public string Name { get; set; }
     }

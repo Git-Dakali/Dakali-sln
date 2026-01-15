@@ -1,7 +1,10 @@
-﻿using Dakali.Interface.Connection;
+﻿using Dakali.Domine.Base;
+using Dakali.Interface.Connection;
 using Dapper;
+using DK.Domain.Locations;
 using DK.Domain.Products;
 using DK.Repositories.Interface.Base;
+using DK.Repositories.Locations;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -15,38 +18,37 @@ namespace DK.Repositories.Products
         private ProductRepository _productRepository;
         private VariantRepository _variantRepository;
         private ColorRepository _colorRepository;
-        private StockStateRepository _stockStateRepository;
+        private LocationRepository _locationRepository;
 
-        public StockRepository(ISession session, ProductRepository productRepository, VariantRepository variantRepository, ColorRepository colorRepository, StockStateRepository stockStateRepository) 
+        public StockRepository(ISession session, ProductRepository productRepository, VariantRepository variantRepository, ColorRepository colorRepository, LocationRepository locationRepository) 
         {
             _session = session;
             _productRepository = productRepository;
             _variantRepository = variantRepository;
             _colorRepository = colorRepository;
-            _stockStateRepository = stockStateRepository;
+            _locationRepository = locationRepository;
         }
 
         public async Task<Stock> Create(Stock entity, CancellationToken cancellation = default)
         {
             var query = @"
-            INSERT INTO dbo.Stock (ProductId, VariantId, ColorId, Physical, Reserved, Transit, Free, Minimum, Maximum, StockStateId, SearchString)
+            INSERT INTO dbo.Stock (ProductId, VariantId, ColorId, Physical, Reserved, Transit, Free, Minimum, Maximum, LocationId, SearchString)
             OUTPUT INSERTED.*
-            VALUES (@ProductId, @VariantId, @ColorId, @Physical, @Reserved, @Transit, @Free, @Minimum, @Maximum, @StockStateId, @SearchString);";
+            VALUES (@ProductId, @VariantId, @ColorId, @Physical, @Reserved, @Transit, @Free, @Minimum, @Maximum, @LocationId, @SearchString);";
 
             entity.SearchString = entity.ToString();
             var stock = await _session.Connection.QuerySingleAsync<Stock>(query, 
                 new { 
                     ProductId = entity.Product.Id, 
                     VariantId = entity.Variant.Id, 
-                    ColorId = entity.Color.Id, 
-                    StockStateId = entity.State.Id, 
+                    ColorId = entity.Color.Id,
+                    LocationId = entity.Location.Id, 
                     entity.Physical, 
                     entity.Reserved, 
                     entity.Transit,
                     entity.Free, 
                     entity.Minimum, 
                     entity.Maximum, 
-                    entity.State,
                     entity.SearchString
                 }, transaction: _session.Transaction);
 
@@ -55,7 +57,7 @@ namespace DK.Repositories.Products
                 stock.Product = await _productRepository.Get(entity.Product.Id, cancellation);
                 stock.Variant = await _variantRepository.Get(entity.Product, entity.Variant.Id, cancellation);
                 stock.Color = await _colorRepository.Get(entity.Variant, entity.Color.Id, cancellation);
-                stock.State = await _stockStateRepository.Get(entity.State.Id, cancellation);
+                stock.Location = await _locationRepository.Get(entity.Location.Id, cancellation);
             }
 
             return stock;
@@ -99,7 +101,40 @@ namespace DK.Repositories.Products
             newStock.Free = rowDapper.Free;
             newStock.Minimum = rowDapper.Minimum;
             newStock.Maximum = rowDapper.Maximum;
-            newStock.State = await _stockStateRepository.Get(rowDapper.StockStateId, cancellation);
+            newStock.Location = await _locationRepository.Get(rowDapper.LocationId, cancellation);
+            newStock.Product = await _productRepository.Get(rowDapper.ProductId, cancellation);
+            newStock.Variant = await _variantRepository.Get(newStock.Product, rowDapper.VariantId, cancellation);
+            newStock.Color = await _colorRepository.Get(newStock.Variant, rowDapper.ColorId, cancellation);
+
+            return newStock;
+        }
+
+        public async Task<Stock> Get(Product product, Variant variant, Color color, Location location, CancellationToken cancellation = default)
+        {
+            var query = @"
+                select *
+                from dbo.Stock 
+                where IsDeleted = 0 AND ProductId = @ProductId AND VariantId = @VariantId AND ColorId = @ColorId AND LocationId = @LocationId";
+            var rowDapper = await _session.Connection.QuerySingleOrDefaultAsync<dynamic>(query, new { ProductId = product.Id, VariantId = variant.Id, ColorId = color.Id, LocationId = location.Id }, transaction: _session.Transaction);
+
+            if (rowDapper == null)
+                return null;
+
+            var newStock = new Stock();
+            newStock.Id = rowDapper.Id;
+            newStock.SearchString = rowDapper.SearchString;
+            newStock.CreationDate = rowDapper.CreationDate;
+            newStock.UpdateDate = rowDapper.UpdateDate;
+            newStock.RemoveDate = rowDapper.RemoveDate;
+            newStock.IsDeleted = rowDapper.IsDeleted;
+            newStock.Guid = rowDapper.Guid;
+            newStock.Physical = rowDapper.Physical;
+            newStock.Reserved = rowDapper.Reserved;
+            newStock.Transit = rowDapper.Transit;
+            newStock.Free = rowDapper.Free;
+            newStock.Minimum = rowDapper.Minimum;
+            newStock.Maximum = rowDapper.Maximum;
+            newStock.Location = await _locationRepository.Get(rowDapper.LocationId, cancellation);
             newStock.Product = await _productRepository.Get(rowDapper.ProductId, cancellation);
             newStock.Variant = await _variantRepository.Get(newStock.Product, rowDapper.VariantId, cancellation);
             newStock.Color = await _colorRepository.Get(newStock.Variant, rowDapper.ColorId, cancellation);
@@ -112,8 +147,8 @@ namespace DK.Repositories.Products
             var query = @"
                 select *
                 from dbo.Stock 
-                where IsDeleted = 0";
-            var rowsDapper = await _session.Connection.QueryAsync(query, new { }, transaction: _session.Transaction);
+                where IsDeleted = 0 ";
+            var rowsDapper = await _session.Connection.QueryAsync(query, new {}, transaction: _session.Transaction);
 
             if (rowsDapper == null)
                 return Enumerable.Empty<Stock>();
@@ -136,7 +171,52 @@ namespace DK.Repositories.Products
                 newStock.Free = rowDapper.Free;
                 newStock.Minimum = rowDapper.Minimum;
                 newStock.Maximum = rowDapper.Maximum;
-                newStock.State = await _stockStateRepository.Get(rowDapper.StockStateId, cancellation);
+                newStock.Location = await _locationRepository.Get(rowDapper.LocationId, cancellation);
+                newStock.Product = await _productRepository.Get(rowDapper.ProductId, cancellation);
+                newStock.Variant = await _variantRepository.Get(newStock.Product, rowDapper.VariantId ?? 0, cancellation);
+                newStock.Color = await _colorRepository.Get(newStock.Variant, rowDapper.ColorId ?? 0, cancellation);
+
+                stocks.Add(newStock);
+            }
+            return stocks;
+        }
+
+        public async Task<IEnumerable<Stock>> GetAll(string searchString, CancellationToken cancellation = default)
+        {
+            var query = @"
+                select *
+                from dbo.Stock 
+                where IsDeleted = 0";
+
+            if (!string.IsNullOrWhiteSpace(searchString))
+                query += " AND CONTAINS(SearchString, @SearchString)";
+
+            var values = (searchString ?? string.Empty).Split(" ").Select(value => value.Trim()).Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => $"\"{value}*\"");
+
+            var rowsDapper = await _session.Connection.QueryAsync(query, new { SearchString = $"({string.Join(" AND ", values)})" }, transaction: _session.Transaction);
+
+            if (rowsDapper == null)
+                return Enumerable.Empty<Stock>();
+
+            var stocks = new List<Stock>();
+            foreach (var rowDapper in rowsDapper)
+            {
+
+                var newStock = new Stock();
+                newStock.Id = rowDapper.Id;
+                newStock.SearchString = rowDapper.SearchString;
+                newStock.CreationDate = rowDapper.CreationDate;
+                newStock.UpdateDate = rowDapper.UpdateDate;
+                newStock.RemoveDate = rowDapper.RemoveDate;
+                newStock.IsDeleted = rowDapper.IsDeleted;
+                newStock.Guid = rowDapper.Guid;
+                newStock.Physical = rowDapper.Physical;
+                newStock.Reserved = rowDapper.Reserved;
+                newStock.Transit = rowDapper.Transit;
+                newStock.Free = rowDapper.Free;
+                newStock.Minimum = rowDapper.Minimum;
+                newStock.Maximum = rowDapper.Maximum;
+                newStock.Location = await _locationRepository.Get(rowDapper.LocationId, cancellation);
                 newStock.Product = await _productRepository.Get(rowDapper.ProductId, cancellation);
                 newStock.Variant = await _variantRepository.Get(newStock.Product, rowDapper.VariantId ?? 0, cancellation);
                 newStock.Color = await _colorRepository.Get(newStock.Variant, rowDapper.ColorId ?? 0, cancellation);
@@ -148,33 +228,22 @@ namespace DK.Repositories.Products
 
         public async Task<Stock> Update(Stock entity, CancellationToken cancellation = default)
         {
+            throw new System.Exception("La actualizacion del Stock esta bloqueado, revise con un Administrador.");
+        }
+
+        public async Task StockEntry(Stock entity, int amount, CancellationToken cancellationToken = default)
+        {
             var query = @"
                 UPDATE dbo.Stock
                 SET 
-                    Physical = @Physical,
-                    Reserved = @Reserved,
-                    Transit = @Transit,
-                    Free = @Free,
-                    Minimum = @Minimum,
-                    Maximum = @Maximum,
-                    StockStateId = @StockStateId,
-                    ProductId = @ProductId,
-                    VariantId = @VariantId,
-                    ColorId = @ColorId,
-                    SearchString = @SearchString,
+                    Physical = Physical + @Amount,
+                    Free = Free + @Amount,
                     UpdateDate = SYSUTCDATETIME(),
                     Version = Version + 1
-                OUTPUT INSERTED.*
                 WHERE Id = @Id AND IsDeleted = 0;
             ";
 
-            entity.SearchString = entity.ToString();
-            await _session.Connection.QuerySingleAsync<Model>(query, new { 
-                entity.Id, entity.Physical, entity.Reserved, entity.Transit, entity.Free, entity.Minimum, entity.Maximum,
-                StockStateId = entity.State.Id, ProductId = entity.Product.Id, VariantId = entity.Variant.Id, ColorId = entity.Color.Id, entity.SearchString
-            }, transaction: _session.Transaction);
-            
-            return await Get(entity.Id, cancellation) ?? throw new KeyNotFoundException($"El Stock {entity.Product.Name}-{entity.Variant.Name}-{entity.Color.Name} no se encontro para actualizar.");
+            await _session.Connection.ExecuteAsync(query, new { entity.Id, Amount = amount }, transaction: _session.Transaction);
         }
     }
 }

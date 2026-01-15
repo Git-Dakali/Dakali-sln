@@ -10,7 +10,11 @@ namespace DK.Validator
             service.AddScoped<ModelValidator>();
             service.AddScoped<ProductValidator>();
             service.AddScoped<StockValidator>();
-            service.AddScoped<StockStateValidator>();
+            service.AddScoped<LocationStateValidator>();
+            service.AddScoped<HallwayValidator>();
+            service.AddScoped<ColumnValidator>();
+            service.AddScoped<LevelValidator>();
+            service.AddScoped<LocationValidator>();
         }
     }
 }

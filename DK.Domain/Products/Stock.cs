@@ -1,4 +1,5 @@
 ﻿using Dakali.Domine.Base;
+using DK.Domain.Locations;
 
 namespace DK.Domain.Products
 {
@@ -13,7 +14,7 @@ namespace DK.Domain.Products
         public long Free { get; set; }
         public long Minimum { get; set; }
         public long Maximum { get; set; }
-        public StockState State { get; set; }
+        public Location Location { get; set; }
 
         public Stock()
         { 
@@ -27,7 +28,7 @@ namespace DK.Domain.Products
 
         public override string ToString() 
         {
-            return $"{Product.Name} {Variant.Name} {Color.Name} {State.ToString()}";
+            return $"{Product.Model.Code} {Product.Name} {Variant.Name} {Color.Name} {Location.ToString()}";
         }
     }
 }

@@ -23,6 +23,11 @@ namespace DK.Process.Product
             return await _stockRepository.GetAll(cancellationToken);
         }
 
+        public async Task<IEnumerable<Stock>> GetAll(string searchString, CancellationToken cancellationToken = default)
+        {
+            return await _stockRepository.GetAll(searchString, cancellationToken);
+        }
+
         public async Task<Stock> Get(long id, CancellationToken cancellationToken = default)
         {
             return await _stockRepository.Get(id, cancellationToken);
@@ -36,11 +41,10 @@ namespace DK.Process.Product
             return await _stockRepository.Create(stock, cancellationToken);
         }
 
-        public async Task<Stock> Update(Stock stock, CancellationToken cancellationToken = default)
+        public async Task StockEntry(Stock stock, int amount, CancellationToken cancellationToken = default)
         {
-            await _stockValidator.Update(stock, cancellationToken);
-
-            return await _stockRepository.Update(stock, cancellationToken);
+            await _stockValidator.StockEntry(stock, amount, cancellationToken);
+            await _stockRepository.StockEntry(stock, amount, cancellationToken);
         }
 
         public async Task Delete(Stock stock, CancellationToken cancellationToken = default)

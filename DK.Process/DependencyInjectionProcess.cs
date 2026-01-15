@@ -1,4 +1,5 @@
-﻿using DK.Process.Product;
+﻿using DK.Process.Locations;
+using DK.Process.Product;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DK.Process
@@ -11,7 +12,11 @@ namespace DK.Process
             service.AddScoped<ModelProcess>();
             service.AddScoped<ProductProcess>();
             service.AddScoped<StockProcess>();
-            service.AddScoped<StockStateProcess>();
+            service.AddScoped<HallwayProcess>();
+            service.AddScoped<ColumnProcess>();
+            service.AddScoped<LevelProcess>();
+            service.AddScoped<LocationStateProcess>();
+            service.AddScoped<LocationProcess>();
         }
     }
 }

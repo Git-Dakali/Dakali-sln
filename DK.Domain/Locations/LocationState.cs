@@ -1,12 +1,12 @@
 ﻿using Dakali.Domine.Base;
 
-namespace DK.Domain.Products
+namespace DK.Domain.Locations
 {
-    public class StockState : EntityCode
+    public class LocationState : EntityCode
     {
         public string Name { get; set; }
 
-        public StockState()
+        public LocationState()
         {
             Name = string.Empty;
         }
