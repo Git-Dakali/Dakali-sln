@@ -1,4 +1,5 @@
-﻿using DK.Domain.Products;
+﻿using DK.Domain.Locations;
+using DK.Domain.Products;
 using DK.Repositories.Locations;
 using DK.Repositories.Products;
 using System;
@@ -153,6 +154,39 @@ namespace DK.Validator
             if (locationPersisted is null)
                 throw new Exception($"La ubicacion {stock.Location.Hallway?.Name ?? string.Empty}-{stock.Location.Column?.Name ?? string.Empty}-{stock.Location.Level?.Name ?? string.Empty} no existe.");
 
+        }
+
+        public async Task Reserve(LocationState state, Product product, Variant variant, ProductColor color, long freeCount, CancellationToken cancellation = default)
+        {
+            if (state == null)
+                throw new Exception("El estado de la ubicacion esta vacio.");
+            if (product == null)
+                throw new Exception("El producto esta vacio.");
+            if (variant == null)
+                throw new Exception("La variante esta vacio.");
+            if (color == null)
+                throw new Exception("El color esta vacio.");
+            if (freeCount <= 0)
+                throw new Exception("La cantidad a reservar del stock debe ser mayor a cero");
+
+            var stock = await _stockRepository.Get(state, product, variant, color, freeCount, cancellation);
+
+            if (stock is null)
+                throw new Exception($"No existe un stock libre para el producto {product.Name}-{variant.Name}-{color.Name} con cantidad {freeCount} en estado {state.Name}");
+        }
+
+        public async Task CancelReserved(Stock stock, long count, CancellationToken cancellation = default)
+        {
+            if(stock.Id == 0 )
+                throw new Exception("No existe el Stock");
+
+            if(count <= 0)
+                throw new Exception("La cantidad a eliminar la reserva de stock debe ser mayor a cero");
+
+            var stockPersisted = await _stockRepository.Get(stock.Id, cancellation);
+
+            if (stockPersisted is null)
+                throw new Exception($"No existe un stock para el producto {stock.Product?.Name}-{stock.Variant?.Name}-{stock.Color?.Name} con cantidad {count} en estado {stock.Location?.State?.Name}");
         }
     }
 }

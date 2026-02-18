@@ -13,9 +13,9 @@ namespace DK.Repositories.Products
     {
         private readonly ISession _session;
         private readonly PropertyGroupRepository _attributeGroupRepository;
-        private readonly ColorRepository _colorRepository;
+        private readonly ProductColorRepository _colorRepository;
 
-        public VariantRepository(ISession session, PropertyGroupRepository attributeGroupRepository, ColorRepository colorRepository)
+        public VariantRepository(ISession session, PropertyGroupRepository attributeGroupRepository, ProductColorRepository colorRepository)
         {
             _session = session;
             _attributeGroupRepository = attributeGroupRepository;

@@ -1,8 +1,12 @@
 ﻿using AutoMapper;
 using Dakali.Domine;
+using DK.Domain.GeographicLocation;
 using DK.Domain.Locations;
 using DK.Domain.Products;
+using DK.Domain.Sales;
 using DK.WebApi.ViewModel;
+using DK.WebApi.ViewModel.GeographicLocation;
+using DK.WebApi.ViewModel.Sales;
 
 namespace DK.WebApi
 {
@@ -16,8 +20,8 @@ namespace DK.WebApi
             CreateMap<Property, PropertyResponse>();
             CreateMap<CategoryRequest, Category>();
             CreateMap<Category, CategoryResponse>();
-            CreateMap<ColorRequest, Color>();
-            CreateMap<Color, ColorResponse>();
+            CreateMap<ProductColorRequest, ProductColor>();
+            CreateMap<ProductColor, ProductColorResponse>();
             CreateMap<FieldGroupRequest, FieldGroup>();
             CreateMap<FieldGroup, FieldGroupResponse>();
             CreateMap<FieldRequest, Field>();
@@ -44,6 +48,21 @@ namespace DK.WebApi
             CreateMap<Level, LevelResponse>();
             CreateMap<StockRequest, Stock>();
             CreateMap<Stock, StockResponse>();
+            CreateMap<CountryRequest, Country>();
+            CreateMap<Country, CountryResponse>();
+            CreateMap<ProvinceRequest, Province>();
+            CreateMap<Province, ProvinceResponse>();
+            CreateMap<CityRequest, City>();
+            CreateMap<City, CityResponse>();
+            CreateMap<OriginSaleRequest, OriginSale>();
+            CreateMap<OriginSale, OriginSaleResponse>();
+            CreateMap<SaleDetailRequest, SaleDetail>();
+            CreateMap<SaleDetail, SaleDetailResponse>();
+            CreateMap<SaleRequest, Sale>();
+            CreateMap<Sale, SaleResponse>();
+            CreateMap<TaxStatusRequest, TaxStatus>();
+            CreateMap<TaxStatus, TaxStatusResponse>();
+
         }
     }
 }

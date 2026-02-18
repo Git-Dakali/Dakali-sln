@@ -7,7 +7,7 @@ namespace DK.Domain.Products
     {
         public Product Product {  get; set; }
         public Variant Variant { get; set; }
-        public Color Color { get; set; }
+        public ProductColor Color { get; set; }
         public long Physical { get; set; }
         public long Reserved { get; set; }
         public long Transit { get; set; }

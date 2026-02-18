@@ -1,5 +1,7 @@
-﻿using DK.Repositories.Locations;
+﻿using DK.Repositories.GeographicLocation;
+using DK.Repositories.Locations;
 using DK.Repositories.Products;
+using DK.Repositories.Sales;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DK.Repositories
@@ -11,10 +13,10 @@ namespace DK.Repositories
             service.AddScoped<PropertyGroupRepository>();
             service.AddScoped<PropertyRepository>();
             service.AddScoped<CategoryRepository>();
-            service.AddScoped<ColorRepository>();
+            service.AddScoped<ProductColorRepository>();
             service.AddScoped<FieldGroupRepository>();
             service.AddScoped<FieldRepository>();
-            service.AddScoped<ColorImageRepository>();
+            service.AddScoped<ProductColorImageRepository>();
             service.AddScoped<ModelRepository>();
             service.AddScoped<ProductRepository>();
             service.AddScoped<Model_VariantNameRepository>();
@@ -26,6 +28,13 @@ namespace DK.Repositories
             service.AddScoped<ColumnRepository>();
             service.AddScoped<LevelRepository>();
             service.AddScoped<LocationRepository>();
+            service.AddScoped<CountryRepository>();
+            service.AddScoped<ProvinceRepository>();
+            service.AddScoped<CityRepository>();
+            service.AddScoped<OriginSaleRepository>();
+            service.AddScoped<SaleRepository>();
+            service.AddScoped<SaleDetailRepository>();
+            service.AddScoped<TaxStatusRepository>();
         }
     }
 }

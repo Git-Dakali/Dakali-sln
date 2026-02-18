@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using DK.Validator.GeographicLocation;
+using DK.Validator.Sales;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DK.Validator
 {
@@ -15,6 +17,15 @@ namespace DK.Validator
             service.AddScoped<ColumnValidator>();
             service.AddScoped<LevelValidator>();
             service.AddScoped<LocationValidator>();
+            service.AddScoped<ProductColorValidator>();
+            service.AddScoped<VariantValidator>();
+            service.AddScoped<CountryValidator>();
+            service.AddScoped<ProvinceValidator>();
+            service.AddScoped<CityValidator>();
+            service.AddScoped<OriginSaleValidator>();
+            service.AddScoped<SaleValidator>();
+            service.AddScoped<SaleDetailValidator>();
+            service.AddScoped<TaxStatusValidator>();
         }
     }
 }

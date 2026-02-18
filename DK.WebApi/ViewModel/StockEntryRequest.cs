@@ -2,7 +2,7 @@
 {
     public class StockEntryRequest
     {
-        public StockRequest Stock { get; set; }
+        public StockRequest? Stock { get; set; }
         public int Amount { get; set; }
     }
 }

@@ -6,7 +6,7 @@ namespace DK.WebApi.ViewModel
     {
         public string Name { get; set; }
         public string Description { get; set; }
-        public ModelResponse Model { get; set; }
+        public ModelResponse? Model { get; set; }
         public IEnumerable<VariantResponse> Variants { get; set; }
     }
 }

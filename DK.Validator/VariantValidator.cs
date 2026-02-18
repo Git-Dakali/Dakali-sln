@@ -10,10 +10,12 @@ namespace DK.Validator
     public class VariantValidator
     {
         public VariantRepository _variantRepository;
+        public ProductColorValidator _productColorValidator;
 
-        public VariantValidator(VariantRepository variantRepository)
+        public VariantValidator(VariantRepository variantRepository, ProductColorValidator productColorValidator)
         {
             _variantRepository = variantRepository ?? throw new ArgumentNullException("VariantRepository");
+            _productColorValidator = productColorValidator ?? throw new ArgumentNullException("ProductColorValidator");
         }
 
         public async Task Create(Product product, Variant variant, CancellationToken cancellationToken = default)
@@ -23,6 +25,9 @@ namespace DK.Validator
             await SalePrice(variant, cancellationToken);
             await Colors(variant, cancellationToken);
             await Attributes(product, variant, cancellationToken);
+
+            foreach (var color in variant.ColorsHex)
+                await _productColorValidator.Create(variant, color, cancellationToken);
         }
 
         public async Task Update(Product product, Variant variant, CancellationToken cancellationToken = default)
@@ -32,6 +37,9 @@ namespace DK.Validator
             await SalePrice(variant, cancellationToken);
             await Colors(variant, cancellationToken);
             await Attributes(product, variant, cancellationToken);
+
+            foreach (var color in variant.ColorsHex)
+                await _productColorValidator.Update(variant, color, cancellationToken);
         }
 
         public async Task Delete(Product product, Variant variant, CancellationToken cancellationToken = default)
@@ -91,7 +99,7 @@ namespace DK.Validator
 
                 foreach (var field in fieldGroup.Fields)
                 {
-                    if(properties.ContainsKey(field.Name.ToUpper()))
+                    if(!properties.ContainsKey(field.Name.ToUpper()))
                         throw new Exception($"No tiene configurado el campo {field.Name}.");
                 }
             }

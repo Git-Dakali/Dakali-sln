@@ -9,35 +9,35 @@ using System.Threading.Tasks;
 
 namespace DK.Repositories.Products
 {
-    public class ColorRepository : RepositoryReferenceEntity<Variant, Color>
+    public class ProductColorRepository : RepositoryReferenceEntity<Variant, ProductColor>
     {
         private readonly ISession _session;
-        private readonly ColorImageRepository _colorImageRepository;
+        private readonly ProductColorImageRepository _colorImageRepository;
 
-        public ColorRepository(ISession session, ColorImageRepository productImageRepository)
+        public ProductColorRepository(ISession session, ProductColorImageRepository productImageRepository)
         {
             _session = session;
             _colorImageRepository = productImageRepository;
         }
 
-        public async override Task<Color> Create(Variant parent, Color entity, CancellationToken cancellation = default)
+        public async override Task<ProductColor> Create(Variant parent, ProductColor entity, CancellationToken cancellation = default)
         {
             var sql = @"
-                INSERT INTO dbo.Color (VariantId, Name, Hex, SortOrder, SearchString) 
+                INSERT INTO dbo.ProductColor (VariantId, Name, Hex, SortOrder, Sku, SearchString) 
                 OUTPUT INSERTED.*
-                VALUES(@VariantId, @Name, @Hex, @SortOrder, @SearchString);";
+                VALUES(@VariantId, @Name, @Hex, @SortOrder, @Sku, @SearchString);";
 
             entity.SearchString = entity.ToString();
-            var color = await _session.Connection.QuerySingleAsync<Color>(new CommandDefinition(sql, new { VariantId = parent.Id, entity.Name, entity.Hex, entity.SortOrder, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
+            var color = await _session.Connection.QuerySingleAsync<ProductColor>(new CommandDefinition(sql, new { VariantId = parent.Id, entity.Name, entity.Hex, entity.Sku, entity.SortOrder, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
             color.Images = await _colorImageRepository.SyncCollection(color, entity.Images, cancellation);
 
             return color;
         }
 
-        public async override Task Delete(Variant parent, Color entity, CancellationToken cancellation = default)
+        public async override Task Delete(Variant parent, ProductColor entity, CancellationToken cancellation = default)
         {
             var sql = @"
-                UPDATE dbo.Color
+                UPDATE dbo.ProductColor
                 SET IsDeleted  = 1,
                     RemoveDate = SYSUTCDATETIME(),
                     UpdateDate = SYSUTCDATETIME(),
@@ -48,7 +48,7 @@ namespace DK.Repositories.Products
             await _colorImageRepository.Delete(entity, entity.Images, cancellation);
         }
 
-        public async override Task Delete(Variant parent, IEnumerable<Color> entities, CancellationToken cancellation = default)
+        public async override Task Delete(Variant parent, IEnumerable<ProductColor> entities, CancellationToken cancellation = default)
         {
             if (entities is null)
                 return;
@@ -57,14 +57,14 @@ namespace DK.Repositories.Products
                 await Delete(parent, entity, cancellation);
         }
 
-        public async override Task<Color> Get(Variant parent, long id, CancellationToken cancellation = default)
+        public async override Task<ProductColor> Get(Variant parent, long id, CancellationToken cancellation = default)
         {
             const string sql = @"
                 SELECT *
-                  FROM dbo.Color
+                  FROM dbo.ProductColor
                  WHERE VariantId = @VariantId AND Id = @Id AND IsDeleted = 0;";
 
-            var color = await _session.Connection.QuerySingleOrDefaultAsync<Color>(
+            var color = await _session.Connection.QuerySingleOrDefaultAsync<ProductColor>(
                 new CommandDefinition(sql, new { VariantId = parent.Id, Id = id }, _session.Transaction, cancellationToken: cancellation));
 
             if (color != null)
@@ -73,10 +73,10 @@ namespace DK.Repositories.Products
             return color;
         }
 
-        public async override Task<IEnumerable<Color>> Get(Variant parent, CancellationToken cancellation = default)
+        public async override Task<IEnumerable<ProductColor>> Get(Variant parent, CancellationToken cancellation = default)
         {
-            var sql = @"SELECT * FROM Color WHERE VariantId = @VariantId AND IsDeleted = 0 ORDER BY SortOrder, Id;";
-            var colors = await _session.Connection.QueryAsync<Color>(new CommandDefinition(sql, new { VariantId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
+            var sql = @"SELECT * FROM ProductColor WHERE VariantId = @VariantId AND IsDeleted = 0 ORDER BY SortOrder, Id;";
+            var colors = await _session.Connection.QueryAsync<ProductColor>(new CommandDefinition(sql, new { VariantId = parent.Id }, _session.Transaction, cancellationToken: cancellation));
 
             foreach (var color in colors)
                 color.Images = await _colorImageRepository.Get(color);
@@ -84,7 +84,23 @@ namespace DK.Repositories.Products
             return colors;
         }
 
-        public async override Task<bool> HasChanges(Color entity, Color persited)
+        public async Task<ProductColor> Get(string sku, CancellationToken cancellation = default)
+        {
+            const string sql = @"
+                SELECT *
+                  FROM dbo.ProductColor
+                 WHERE IsDeleted = 0 AND Sku = @Sku;";
+
+            var color = await _session.Connection.QuerySingleOrDefaultAsync<ProductColor>(
+                new CommandDefinition(sql, new { Sku = sku }, _session.Transaction, cancellationToken: cancellation));
+
+            if (color != null)
+                color.Images = await _colorImageRepository.Get(color);
+
+            return color;
+        }
+
+        public async override Task<bool> HasChanges(ProductColor entity, ProductColor persited)
         {
             return entity.Id != persited.Id ||
                 entity.Name != persited.Name ||
@@ -93,12 +109,13 @@ namespace DK.Repositories.Products
                 await _colorImageRepository.HasChanges(persited, entity.Images);
         }
 
-        public async override Task<Color> Update(Variant parent, Color entity, CancellationToken cancellation = default)
+        public async override Task<ProductColor> Update(Variant parent, ProductColor entity, CancellationToken cancellation = default)
         {
             const string sql = @"
-                UPDATE dbo.Color
+                UPDATE dbo.ProductColor
                    SET Hex      = @Hex,
                        Name     = @Name,
+                       Sku      = @Sku,
                        SortOrder   = @SortOrder,
                        SearchString = @SearchString,
                        UpdateDate  = SYSUTCDATETIME(),
@@ -107,8 +124,8 @@ namespace DK.Repositories.Products
                  WHERE VariantId = @VariantId AND Id = @Id AND IsDeleted = 0;";
 
             entity.SearchString = entity.ToString();
-            var updated = await _session.Connection.QuerySingleOrDefaultAsync<Color>(
-                new CommandDefinition(sql, new { VariantId = parent.Id, entity.Id, entity.Name, entity.Hex, entity.SortOrder, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
+            var updated = await _session.Connection.QuerySingleOrDefaultAsync<ProductColor>(
+                new CommandDefinition(sql, new { VariantId = parent.Id, entity.Id, entity.Name, entity.Hex, entity.Sku, entity.SortOrder, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
 
             if (updated != null)
                 updated.Images = await _colorImageRepository.SyncCollection(entity, entity.Images, cancellation);

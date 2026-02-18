@@ -1,12 +1,11 @@
 ﻿using Dakali.Domine.Base;
 
-namespace DK.Domain
+namespace DK.Domain.GeographicLocation
 {
-    public class City : EntityCode
+    public class Country : EntityCode
     {
         public string Name { get; set; }
-
-        public City() 
+        public Country()
             :base()
         {
             Name = string.Empty;

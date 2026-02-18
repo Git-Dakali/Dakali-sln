@@ -4,6 +4,7 @@ using DK.Process;
 using DK.Repositories;
 using DK.Validator;
 using DK.WebApi;
+using DK.WebApi.ConvertAutoMapper;
 using DK.WebApi.Middleware;
 
 const string DakaliSpecificOrigins = "DakaliAllowedOrigins";
@@ -12,6 +13,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(opt =>
+{
+    opt.JsonSerializerOptions.Converters.Add(new StringToDateTimeConverter());
+});
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerDocument(settings =>

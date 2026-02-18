@@ -1,5 +1,7 @@
-﻿using DK.Process.Locations;
+﻿using DK.Process.GeographicLocation;
+using DK.Process.Locations;
 using DK.Process.Product;
+using DK.Process.Sales;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DK.Process
@@ -17,6 +19,13 @@ namespace DK.Process
             service.AddScoped<LevelProcess>();
             service.AddScoped<LocationStateProcess>();
             service.AddScoped<LocationProcess>();
+            service.AddScoped<CountryProcess>();
+            service.AddScoped<ProvinceProcess>();
+            service.AddScoped<CityProcess>();
+            service.AddScoped<OriginSaleProcess>();
+            service.AddScoped<SaleProcess>();
+            service.AddScoped<SaleDetailProcess>();
+            service.AddScoped<TaxStatusProcess>();
         }
     }
 }

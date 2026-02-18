@@ -11,11 +11,13 @@ namespace DK.Validator
     {
         public ProductRepository _productRepository;
         public ModelValidator _modelValidator;
+        public VariantValidator _variantValidator;
 
-        public ProductValidator(ProductRepository productRepository, ModelValidator modelValidator)
+        public ProductValidator(ProductRepository productRepository, ModelValidator modelValidator, VariantValidator variantValidator)
         {
             _productRepository = productRepository ?? throw new ArgumentNullException("ProductRepository");
             _modelValidator = modelValidator ?? throw new ArgumentNullException("ModelValidator");
+            _variantValidator = variantValidator ?? throw new ArgumentNullException("VariantValidator");
         }
 
         public async Task Create(Product product, CancellationToken cancellationToken = default)
@@ -24,6 +26,10 @@ namespace DK.Validator
             await Description(product, cancellationToken);
             await Model(product, cancellationToken);
             await Variant(product, cancellationToken);
+
+            foreach (var item in product.Variants) 
+                await _variantValidator.Create(product, item, cancellationToken);
+            
         }
 
         public async Task Update(Product product, CancellationToken cancellationToken = default)
@@ -32,12 +38,18 @@ namespace DK.Validator
             await Description(product, cancellationToken);
             await Model(product, cancellationToken);
             await Variant(product, cancellationToken);
+
+            foreach (var item in product.Variants)
+                await _variantValidator.Update(product, item, cancellationToken);
         }
 
         public async Task Delete(Product product, CancellationToken cancellationToken = default)
         {
             if (!(await Exist(product, cancellationToken)))
                 throw new Exception($"No existe el producto {product.Name}");
+
+            foreach (var item in product.Variants)
+                await _variantValidator.Delete(product, item, cancellationToken);
         }
 
         public async Task<bool> Exist(Product product, CancellationToken cancellationToken = default)

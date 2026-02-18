@@ -1,12 +1,12 @@
 ﻿using Dakali.Domine.Base;
 
-namespace DK.Domain
+namespace DK.Domain.Sales
 {
-    public class Province : EntityCode
+    public class OriginSale : EntityCode
     {
         public string Name { get; set; }
 
-        public Province()
+        public OriginSale()
             :base()
         {
             Name = string.Empty;

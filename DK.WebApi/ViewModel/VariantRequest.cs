@@ -9,7 +9,7 @@ namespace DK.WebApi.ViewModel
         public decimal SalePrice { get; set; }
         public bool Active { get; set; }
         public int SortOrder { get; set; }
-        public IList<ColorRequest> ColorsHex { get; set; }
+        public IList<ProductColorRequest> ColorsHex { get; set; }
         public IList<PropertyGroupRequest> PropertyGroups { get; set; }
     }
 }

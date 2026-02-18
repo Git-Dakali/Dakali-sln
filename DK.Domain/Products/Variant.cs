@@ -11,12 +11,12 @@ namespace DK.Domain.Products
         public decimal SalePrice { get; set; }
         public bool Active { get; set; }
         public int SortOrder { get; set; }
-        public IEnumerable<Color> ColorsHex { get; set; }
+        public IEnumerable<ProductColor> ColorsHex { get; set; }
         public IEnumerable<PropertyGroup> PropertyGroups { get; set; }
 
         public Variant()
         {
-            ColorsHex = new List<Color>();
+            ColorsHex = new List<ProductColor>();
             PropertyGroups = new List<PropertyGroup>();
             SortOrder = 1;
         }
