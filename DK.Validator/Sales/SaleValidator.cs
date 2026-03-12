@@ -1,4 +1,6 @@
-﻿using DK.Domain.Sales;
+﻿using DK.Domain.RoadMaps;
+using DK.Domain.Sales;
+using DK.Repositories.RoadMaps;
 using DK.Repositories.Sales;
 using System;
 using System.Linq;
@@ -10,6 +12,7 @@ namespace DK.Validator.Sales
     public class SaleValidator
     {
         public SaleRepository _saleRepository;
+        public RoadMapRepository _roadMapRepository;
         public SaleDetailValidator _saleDetailValidator;
 
         public SaleValidator(SaleRepository saleRepository, SaleDetailValidator saleDetailValidator)
@@ -82,6 +85,8 @@ namespace DK.Validator.Sales
             foreach (var item in sale.SaleDetails)
                 await _saleDetailValidator.Delete(sale, item, cancellationToken);
         }
+
+        
 
         public async Task<bool> Exist(Sale sale, CancellationToken cancellationToken = default)
         {

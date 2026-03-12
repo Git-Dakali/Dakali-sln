@@ -11,9 +11,10 @@ namespace Dakali.Domine.Base
             UpdateDate = DateTime.Now;
             Version = 1;
             IsDeleted = false;
+            SearchString = string.Empty;
         }
 
-        
+        public string SearchString { get; set; }
         public DateTime CreationDate { get; set; }
         public DateTime? RemoveDate { get; set; }
         public DateTime UpdateDate { get; set; }

@@ -34,6 +34,13 @@ namespace DK.WebApi.Controllers.Sales
             return _mapper.Map<SaleResponse>(product);
         }
 
+        [HttpGet("GetByNumber")]
+        public async Task<SaleResponse> GetByNumber([FromQuery(Name = "number")] long number, CancellationToken cancellation)
+        {
+            var product = await _saleProcess.GetByNumber(number, cancellation);
+            return _mapper.Map<SaleResponse>(product);
+        }
+
         [HttpPost("Create")]
         public async Task<SaleResponse> Create([FromBody] SaleRequest data, CancellationToken cancellation)
         {

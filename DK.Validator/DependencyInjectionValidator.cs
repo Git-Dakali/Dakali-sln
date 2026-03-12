@@ -1,4 +1,5 @@
 ﻿using DK.Validator.GeographicLocation;
+using DK.Validator.RoadMaps;
 using DK.Validator.Sales;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -26,6 +27,9 @@ namespace DK.Validator
             service.AddScoped<SaleValidator>();
             service.AddScoped<SaleDetailValidator>();
             service.AddScoped<TaxStatusValidator>();
+            service.AddScoped<DriverValidator>();
+            service.AddScoped<RoadMapValidator>();
+            service.AddScoped<RoadMapSaleValidator>();
         }
     }
 }

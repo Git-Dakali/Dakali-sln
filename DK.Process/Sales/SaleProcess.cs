@@ -37,6 +37,11 @@ namespace DK.Process.Sales
             return await _saleRepository.Get(id, cancellationToken);
         }
 
+        public async Task<Sale> GetByNumber(long number, CancellationToken cancellationToken = default)
+        {
+            return await _saleRepository.GetByNumber(number, cancellationToken);
+        }
+
         public async Task<Sale> Create(Sale sale, CancellationToken cancellationToken = default)
         {
             await _saleValidator.Create(sale, cancellationToken);

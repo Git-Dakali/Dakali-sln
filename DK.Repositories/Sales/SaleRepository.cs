@@ -41,21 +41,21 @@ namespace DK.Repositories.Sales
 
             entity.SearchString = entity.ToString();
             var rowDapper = await _session.Connection.QuerySingleAsync(query, 
-                new { 
-                    entity.Identifier, 
-                    entity.ArcaNumber,
-                    entity.Dni,
-                    entity.Cuit,
+                new {
+                    Identifier = entity.Identifier ?? string.Empty, 
+                    ArcaNumber = entity.ArcaNumber ?? string.Empty,
+                    Dni = entity.Dni ?? string.Empty,
+                    Cuit = entity.Cuit ?? string.Empty,
                     entity.Date, 
                     entity.DeliveryDate, 
                     entity.DeliveryStartTime, 
-                    entity.DeliveryEndTime, 
-                    entity.BusinessName, 
-                    entity.Address, 
-                    entity.Floor, 
-                    entity.Apartment, 
-                    entity.Phone,
-                    entity.Observation,
+                    entity.DeliveryEndTime,
+                    BusinessName = entity.BusinessName?? string.Empty, 
+                    Address = entity.Address ?? string.Empty, 
+                    Floor = entity.Floor ?? string.Empty, 
+                    Apartment = entity.Apartment ?? string.Empty, 
+                    Phone = entity.Phone ?? string.Empty,
+                    Observation = entity.Observation ?? string.Empty,
                     entity.GrossPrice,
                     entity.Discounts,
                     entity.TotalPrice,
@@ -65,7 +65,7 @@ namespace DK.Repositories.Sales
                     PdfInvoiceId = entity.PdfInvoice?.Id,
                     CityId = entity.City?.Id,
                     State = SaleState.Creado.ToString(),
-                    entity.SearchString 
+                    SearchString = entity.SearchString ?? string.Empty 
                 }, transaction: _session.Transaction);
 
             if (rowDapper is null)
@@ -100,6 +100,20 @@ namespace DK.Repositories.Sales
                 from dbo.Sale 
                 where IsDeleted = 0 AND Id = @Id";
             var rowDapper = await _session.Connection.QuerySingleOrDefaultAsync(query, new { Id = id }, transaction: _session.Transaction);
+
+            if (rowDapper is null)
+                return null;
+
+            return await Map(rowDapper);
+        }
+
+        public async Task<Sale> GetByNumber(long number, CancellationToken cancellation = default)
+        {
+            var query = @"
+                select *
+                from dbo.Sale 
+                where IsDeleted = 0 AND Number = @Number";
+            var rowDapper = await _session.Connection.QuerySingleOrDefaultAsync(query, new { Number = number }, transaction: _session.Transaction);
 
             if (rowDapper is null)
                 return null;
@@ -163,8 +177,30 @@ namespace DK.Repositories.Sales
             entity.SearchString = entity.ToString();
             await _session.Connection.QuerySingleAsync<Model>(query, 
                 new {
-                    entity.Id, entity.Identifier, entity.ArcaNumber, entity.Dni, entity.Cuit, entity.Date, entity.DeliveryDate, entity.DeliveryStartTime, entity.DeliveryEndTime, entity.BusinessName, entity.Address, entity.Floor, entity.Apartment, entity.Phone,
-                    entity.Observation, entity.GrossPrice, entity.Discounts, entity.TotalPrice, entity.ShippingPrice, TaxStatusId = entity.TaxStatus?.Id, OriginSaleId = entity.OriginSale?.Id, PdfInvoiceId = entity.PdfInvoice?.Id, CityId = entity.City?.Id, entity.SearchString,
+                    entity.Id,
+                    Identifier = entity.Identifier ?? string.Empty,
+                    ArcaNumber = entity.ArcaNumber ?? string.Empty, 
+                    Dni = entity.Dni ?? string.Empty, 
+                    Cuit = entity.Cuit ?? string.Empty, 
+                    entity.Date, 
+                    entity.DeliveryDate, 
+                    entity.DeliveryStartTime, 
+                    entity.DeliveryEndTime, 
+                    BusinessName = entity.BusinessName ?? string.Empty, 
+                    Address = entity.Address ?? string.Empty, 
+                    Floor = entity.Floor ?? string.Empty, 
+                    Apartment = entity.Apartment ?? string.Empty, 
+                    Phone = entity.Phone ?? string.Empty,
+                    Observation = entity.Observation ?? string.Empty, 
+                    entity.GrossPrice, 
+                    entity.Discounts, 
+                    entity.TotalPrice, 
+                    entity.ShippingPrice, 
+                    TaxStatusId = entity.TaxStatus?.Id, 
+                    OriginSaleId = entity.OriginSale?.Id, 
+                    PdfInvoiceId = entity.PdfInvoice?.Id, 
+                    CityId = entity.City?.Id, 
+                    SearchString = entity.SearchString ?? string.Empty,
                 }, transaction: _session.Transaction);
             await _saleDetailRepository.SyncCollection(entity, entity.SaleDetails, cancellation);
 

@@ -37,7 +37,7 @@ namespace DK.Repositories.Locations
             VALUES (@HallwayId, @ColumnId, @LevelId, @LocationStateId, @SearchString);";
 
             entity.SearchString = entity.ToString();
-            var stock = await _session.Connection.QuerySingleAsync<Location>(query,
+            var rowDapper = await _session.Connection.QuerySingleAsync(query,
                 new
                 {
                     HallwayId = entity.Hallway.Id,
@@ -47,15 +47,10 @@ namespace DK.Repositories.Locations
                     entity.SearchString
                 }, transaction: _session.Transaction);
 
-            if (stock != null)
-            {
-                stock.Hallway = await _hallwayRepository.Get(entity.Hallway.Id, cancellation);
-                stock.Column = await _columnRepository.Get(entity.Column.Id, cancellation);
-                stock.Level = await _levelRepository.Get(entity.Level.Id, cancellation);
-                stock.State = await _locationStateRepository.Get(entity.State.Id, cancellation);
-            }
+            if (rowDapper == null)
+                return null;
 
-            return stock;
+            return await Map(rowDapper);
         }
 
         public async Task Delete(Location entity, CancellationToken cancellation = default)
@@ -82,20 +77,24 @@ namespace DK.Repositories.Locations
             if (rowDapper == null)
                 return null;
 
-            var newLocation = new Location();
-            newLocation.Id = rowDapper.Id;
-            newLocation.SearchString = rowDapper.SearchString;
-            newLocation.CreationDate = rowDapper.CreationDate;
-            newLocation.UpdateDate = rowDapper.UpdateDate;
-            newLocation.RemoveDate = rowDapper.RemoveDate;
-            newLocation.IsDeleted = rowDapper.IsDeleted;
-            newLocation.Guid = rowDapper.Guid;
-            newLocation.State = await _locationStateRepository.Get(rowDapper.LocationStateId, cancellation);
-            newLocation.Hallway = await _hallwayRepository.Get(rowDapper.HallwayId, cancellation);
-            newLocation.Column = await _columnRepository.Get(rowDapper.ColumnId, cancellation);
-            newLocation.Level = await _levelRepository.Get(rowDapper.LevelId, cancellation);
+            return await Map(rowDapper);
+        }
 
-            return newLocation;
+        public async Task<Location> Get(string hallwayCode, string columnCode, string levelCode, CancellationToken cancellation = default)
+        {
+            var query = @"
+                select *
+                from dbo.Location 
+                Where IsDeleted = 0 
+                    AND HallwayId = (select h.Id From Hallway h Where h.IsDeleted = 0 AND h.Code = @hallwayCode)
+                    AND ColumnId = (select c.Id From LocationColumn c Where c.IsDeleted = 0 AND c.Code = @columnCode)
+                    AND LevelId = (select n.Id From Level n Where n.IsDeleted = 0 AND n.Code = @levelCode) ";
+            var rowDapper = await _session.Connection.QuerySingleOrDefaultAsync<dynamic>(query, new { hallwayCode, columnCode, levelCode }, transaction: _session.Transaction);
+
+            if (rowDapper == null)
+                return null;
+
+            return await Map(rowDapper);
         }
 
         public async Task<Location> Get(Hallway hallway, Column column, Level level, CancellationToken cancellation = default)
@@ -109,20 +108,7 @@ namespace DK.Repositories.Locations
             if (rowDapper == null)
                 return null;
 
-            var newLocation = new Location();
-            newLocation.Id = rowDapper.Id;
-            newLocation.SearchString = rowDapper.SearchString;
-            newLocation.CreationDate = rowDapper.CreationDate;
-            newLocation.UpdateDate = rowDapper.UpdateDate;
-            newLocation.RemoveDate = rowDapper.RemoveDate;
-            newLocation.IsDeleted = rowDapper.IsDeleted;
-            newLocation.Guid = rowDapper.Guid;
-            newLocation.State = await _locationStateRepository.Get(rowDapper.LocationStateId, cancellation);
-            newLocation.Hallway = await _hallwayRepository.Get(rowDapper.HallwayId, cancellation);
-            newLocation.Column = await _columnRepository.Get(rowDapper.ColumnId, cancellation);
-            newLocation.Level = await _levelRepository.Get(rowDapper.LevelId, cancellation);
-
-            return newLocation;
+            return await Map(rowDapper);
         }
 
         public async Task<IEnumerable<Location>> GetAll(CancellationToken cancellation = default)
@@ -137,24 +123,10 @@ namespace DK.Repositories.Locations
                 return Enumerable.Empty<Location>();
 
             var locations = new List<Location>();
+            
             foreach (var rowDapper in rowsDapper)
-            {
-
-                var newLocation = new Location();
-                newLocation.Id = rowDapper.Id;
-                newLocation.SearchString = rowDapper.SearchString;
-                newLocation.CreationDate = rowDapper.CreationDate;
-                newLocation.UpdateDate = rowDapper.UpdateDate;
-                newLocation.RemoveDate = rowDapper.RemoveDate;
-                newLocation.IsDeleted = rowDapper.IsDeleted;
-                newLocation.Guid = rowDapper.Guid;
-                newLocation.State = await _locationStateRepository.Get(rowDapper.LocationStateId, cancellation);
-                newLocation.Hallway = await _hallwayRepository.Get(rowDapper.HallwayId, cancellation);
-                newLocation.Column = await _columnRepository.Get(rowDapper.ColumnId, cancellation);
-                newLocation.Level = await _levelRepository.Get(rowDapper.LevelId, cancellation);
-
-                locations.Add(newLocation);
-            }
+                locations.Add(await Map(rowDapper));
+            
             return locations;
         }
 
@@ -186,6 +158,24 @@ namespace DK.Repositories.Locations
             }, transaction: _session.Transaction);
 
             return await Get(entity.Id, cancellation) ?? throw new KeyNotFoundException($"La Ubicacion {entity.Hallway.ToString()}-{entity.Column.ToString()}-{entity.Level.ToString()} no se encontro para actualizar.");
+        }
+
+        public async Task<Location> Map(dynamic rowDapper, CancellationToken cancellation = default)
+        {
+            var newLocation = new Location();
+            newLocation.Id = rowDapper.Id;
+            newLocation.SearchString = rowDapper.SearchString;
+            newLocation.CreationDate = rowDapper.CreationDate;
+            newLocation.UpdateDate = rowDapper.UpdateDate;
+            newLocation.RemoveDate = rowDapper.RemoveDate;
+            newLocation.IsDeleted = rowDapper.IsDeleted;
+            newLocation.Guid = rowDapper.Guid;
+            newLocation.State = await _locationStateRepository.Get(rowDapper.LocationStateId, cancellation);
+            newLocation.Hallway = await _hallwayRepository.Get(rowDapper.HallwayId, cancellation);
+            newLocation.Column = await _columnRepository.Get(rowDapper.ColumnId, cancellation);
+            newLocation.Level = await _levelRepository.Get(rowDapper.LevelId, cancellation);
+
+            return newLocation;
         }
     }
 }

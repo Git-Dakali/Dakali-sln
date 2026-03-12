@@ -1,6 +1,8 @@
-﻿using DK.Repositories.GeographicLocation;
+﻿using DK.Domain.RoadMaps;
+using DK.Repositories.GeographicLocation;
 using DK.Repositories.Locations;
 using DK.Repositories.Products;
+using DK.Repositories.RoadMaps;
 using DK.Repositories.Sales;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -35,6 +37,9 @@ namespace DK.Repositories
             service.AddScoped<SaleRepository>();
             service.AddScoped<SaleDetailRepository>();
             service.AddScoped<TaxStatusRepository>();
+            service.AddScoped<DriverRepository>();
+            service.AddScoped<RoadMapRepository>();
+            service.AddScoped<RoadMapSaleRepository>();
         }
     }
 }

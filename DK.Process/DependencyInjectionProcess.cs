@@ -1,6 +1,7 @@
 ﻿using DK.Process.GeographicLocation;
 using DK.Process.Locations;
 using DK.Process.Product;
+using DK.Process.RoadMaps;
 using DK.Process.Sales;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -26,6 +27,9 @@ namespace DK.Process
             service.AddScoped<SaleProcess>();
             service.AddScoped<SaleDetailProcess>();
             service.AddScoped<TaxStatusProcess>();
+            service.AddScoped<DriverProcess>();
+            service.AddScoped<RoadMapProcess>();
+            service.AddScoped<RoadMapSaleProcess>();
         }
     }
 }

@@ -1,8 +1,7 @@
 ﻿namespace DK.WebApi.ViewModel.Base
 {
-    public class ResponseGuid
+    public class ResponseGuid : Response
     {
-        public long Id { get; set; }
         public Guid Guid { get; set; }
         public string SearchString { get; set; }
     }

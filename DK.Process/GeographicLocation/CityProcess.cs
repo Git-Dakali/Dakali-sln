@@ -28,9 +28,9 @@ namespace DK.Process.GeographicLocation
             return await _cityRepository.Get(id, cancellationToken);
         }
 
-        public async Task<City> Get(string code, CancellationToken cancellationToken = default)
+        public async Task<City> Get(string zipCode, CancellationToken cancellationToken = default)
         {
-            return await _cityRepository.Get(code, cancellationToken);
+            return await _cityRepository.Get(zipCode, cancellationToken);
         }
 
         public async Task<IEnumerable<City>> Get(Province province, CancellationToken cancellationToken = default)

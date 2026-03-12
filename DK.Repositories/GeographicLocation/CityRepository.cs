@@ -5,6 +5,8 @@ using DK.Repositories.Interface.Base;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -32,22 +34,7 @@ namespace DK.Repositories.GeographicLocation
             var citys = new List<City>();
 
             foreach (var row in rows)
-            {
-                var city = new City();
-                city.Id = row.Id;
-                city.SearchString = row.SearchString;
-                city.ZipCode = row.ZipCode;
-                city.CreationDate = row.CreationDate;
-                city.RemoveDate = row.RemoveDate;
-                city.UpdateDate = row.UpdateDate;
-                city.Version = row.Version;
-                city.Guid = row.Guid;
-                city.IsDeleted = row.IsDeleted;
-                city.Name = row.Name;
-                city.Province = await _provinceRepository.Get((long)row.ProvinceId, cancellation);
-
-                citys.Add(city);
-            }
+                citys.Add(await Map(row));
 
             return citys;
         }
@@ -60,44 +47,18 @@ namespace DK.Repositories.GeographicLocation
             if (row is null)
                 return null;
 
-            var city = new City();
-            city.Id = row.Id;
-            city.SearchString = row.SearchString;
-            city.ZipCode = row.ZipCode;
-            city.CreationDate = row.CreationDate;
-            city.RemoveDate = row.RemoveDate;
-            city.UpdateDate = row.UpdateDate;
-            city.Version = row.Version;
-            city.Guid = row.Guid;
-            city.IsDeleted = row.IsDeleted;
-            city.Name = row.Name;
-            city.Province = await _provinceRepository.Get((long)row.ProvinceId, cancellation);
-
-            return city;
+            return await Map(row);
         }
 
-        public async Task<City> Get(string code, CancellationToken cancellation = default)
+        public async Task<City> Get(string zipCode, CancellationToken cancellation = default)
         {
-            var query = "select * from dbo.City where IsDeleted = 0 AND Code = @Code";
-            var row = await _session.Connection.QuerySingleOrDefaultAsync(query, new { Code = code }, transaction: _session.Transaction);
+            var query = "select * from dbo.City where IsDeleted = 0 AND ZipCode = @ZipCode";
+            var row = await _session.Connection.QueryFirstOrDefaultAsync(query, new { ZipCode = zipCode }, transaction: _session.Transaction);
 
             if (row is null)
                 return null;
 
-            var city = new City();
-            city.Id = row.Id;
-            city.SearchString = row.SearchString;
-            city.ZipCode = row.ZipCode;
-            city.CreationDate = row.CreationDate;
-            city.RemoveDate = row.RemoveDate;
-            city.UpdateDate = row.UpdateDate;
-            city.Version = row.Version;
-            city.Guid = row.Guid;
-            city.IsDeleted = row.IsDeleted;
-            city.Name = row.Name;
-            city.Province = await _provinceRepository.Get((long)row.ProvinceId, cancellation);
-
-            return city;
+            return await Map(row);
         }
 
         public async Task<IEnumerable<City>> Get(Province province, CancellationToken cancellation = default)
@@ -111,22 +72,7 @@ namespace DK.Repositories.GeographicLocation
             var citys = new List<City>();
 
             foreach (var row in rows)
-            {
-                var city = new City();
-                city.Id = row.Id;
-                city.SearchString = row.SearchString;
-                city.ZipCode = row.ZipCode;
-                city.CreationDate = row.CreationDate;
-                city.RemoveDate = row.RemoveDate;
-                city.UpdateDate = row.UpdateDate;
-                city.Version = row.Version;
-                city.Guid = row.Guid;
-                city.IsDeleted = row.IsDeleted;
-                city.Name = row.Name;
-                city.Province = await _provinceRepository.Get((long)row.ProvinceId, cancellation);
-
-                citys.Add(city);
-            }
+                citys.Add(await Map(row));
 
             return citys;
         }
@@ -144,20 +90,7 @@ namespace DK.Repositories.GeographicLocation
             if (row is null)
                 return null;
 
-            var city = new City();
-            city.Id = row.Id;
-            city.SearchString = row.SearchString;
-            city.ZipCode = row.ZipCode;
-            city.CreationDate = row.CreationDate;
-            city.RemoveDate = row.RemoveDate;
-            city.UpdateDate = row.UpdateDate;
-            city.Version = row.Version;
-            city.Guid = row.Guid;
-            city.IsDeleted = row.IsDeleted;
-            city.Name = row.Name;
-            city.Province = await _provinceRepository.Get((long)row.ProvinceId, cancellation);
-
-            return city;
+            return await Map(row);
         }
 
         public async Task<City> Update(City entity, CancellationToken cancellation = default)
@@ -181,20 +114,7 @@ namespace DK.Repositories.GeographicLocation
             if (row is null)
                 throw new Exception($"La Localidad {entity.ZipCode}-{entity.Name} no existe para actualizar.");
 
-            var city = new City();
-            city.Id = row.Id;
-            city.SearchString = row.SearchString;
-            city.ZipCode = row.ZipCode;
-            city.CreationDate = row.CreationDate;
-            city.RemoveDate = row.RemoveDate;
-            city.UpdateDate = row.UpdateDate;
-            city.Version = row.Version;
-            city.Guid = row.Guid;
-            city.IsDeleted = row.IsDeleted;
-            city.Name = row.Name;
-            city.Province = await _provinceRepository.Get((long)row.ProvinceId, cancellation);
-
-            return city;
+            return await Map(row);
         }
 
         public async Task Delete(City entity, CancellationToken cancellation = default)
@@ -208,6 +128,24 @@ namespace DK.Repositories.GeographicLocation
                  WHERE Id = @id AND IsDeleted = 0;";
 
             await _session.Connection.ExecuteAsync(query, entity, transaction: _session.Transaction);
+        }
+
+        public async Task<City> Map(dynamic rowDapper, CancellationToken cancellation = default)
+        {
+            var city = new City();
+            city.Id = rowDapper.Id;
+            city.SearchString = rowDapper.SearchString;
+            city.ZipCode = rowDapper.ZipCode;
+            city.CreationDate = rowDapper.CreationDate;
+            city.RemoveDate = rowDapper.RemoveDate;
+            city.UpdateDate = rowDapper.UpdateDate;
+            city.Version = rowDapper.Version;
+            city.Guid = rowDapper.Guid;
+            city.IsDeleted = rowDapper.IsDeleted;
+            city.Name = rowDapper.Name;
+            city.Province = await _provinceRepository.Get((long)rowDapper.ProvinceId, cancellation);
+
+            return city;
         }
     }
 }

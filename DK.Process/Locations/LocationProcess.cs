@@ -28,6 +28,11 @@ namespace DK.Process.Locations
             return await _locationRepository.Get(id, cancellationToken);
         }
 
+        public async Task<Location> Get(string hallwayCode, string columnCode, string levelCode, CancellationToken cancellationToken = default)
+        {
+            return await _locationRepository.Get(hallwayCode, columnCode, levelCode, cancellationToken);
+        }
+
         public async Task<Location> Create(Location entity, CancellationToken cancellationToken = default)
         {
             await _locationValidator.Create(entity, cancellationToken);

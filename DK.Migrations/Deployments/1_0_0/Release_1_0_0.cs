@@ -3,10 +3,12 @@ using DK.DatabaseMigrations.Deployments;
 using DK.Domain.GeographicLocation;
 using DK.Domain.Locations;
 using DK.Domain.Products;
+using DK.Domain.RoadMaps;
 using DK.Domain.Sales;
 using DK.Process.GeographicLocation;
 using DK.Process.Locations;
 using DK.Process.Product;
+using DK.Process.RoadMaps;
 using DK.Process.Sales;
 using DK.Repositories.GeographicLocation;
 using DK.Repositories.Locations;
@@ -40,7 +42,9 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
         }
         public async override Task BasicRun()
         {
+            await CreateOriginSale();
             await CreateCategory();
+            await CreateCity();
             await CreateModel();
             await CreateLocationState();
             await CreateHallway();
@@ -48,9 +52,8 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
             await CreateLevel();
             await CreateLocation();
             await CreateProduct();
-            await CreateCity();
-            await CreateOriginSale();
             await CreateTaxStatus();
+            await CreateDriver();
         }
 
         public async Task CreateCategory()
@@ -320,7 +323,8 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
             product1800.Model = await modelRepository.Get("1800");
 
             ConfigureProduct(product1800);
-            await process.Create(product1800);
+            var newProduct1800 = await process.Create(product1800);
+            await CreateStock(newProduct1800);
 
             var product4000 = new Product();
             product4000.Name = "Mocasines Cuero";
@@ -328,7 +332,34 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
             product4000.Model = await modelRepository.Get("4000");
 
             ConfigureProduct(product4000);
-            await process.Create(product4000);
+            var newProduct4000 = await process.Create(product4000);
+            await CreateStock(newProduct4000);
+
+            await CreateSale(newProduct4000);
+        }
+
+        public async Task CreateDriver()
+        {
+            var process = _serviceProvider.GetService<DriverProcess>();
+            
+            var david = new Driver();
+            david.Dni = "37188173";
+            david.FirstName = "David";
+            david.LastName = "Calizaya LLanos";
+
+            var jhoasil = new Driver();
+            jhoasil.Dni = "11222333";
+            jhoasil.FirstName = "Jhoasil";
+            jhoasil.LastName = "Garcia";
+
+            var armando = new Driver();
+            armando.Dni = "11222333";
+            armando.FirstName = "Armando";
+            armando.LastName = "Manzaneda";
+
+            await process.Create(david);
+            await process.Create(jhoasil);
+            await process.Create(armando);
         }
 
         public async Task CreateCity()
@@ -414,6 +445,67 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
             await process.Create(originSale1);
             await process.Create(originSale2);
             await process.Create(originSale3);
+        }
+
+        public async Task CreateStock(Product product)
+        {
+            var locationProcess = _serviceProvider.GetService<LocationProcess>();
+            var stockProcess = _serviceProvider.GetService<StockProcess>();
+            
+            var location = await locationProcess.Get("PAS1", "COL1", "NIV1");
+
+            foreach (var variant in product.Variants)
+            {
+                foreach (var color in variant.ColorsHex)
+                {
+                    var stock = new Stock();
+                    stock.Location = location;
+                    stock.Product = product;
+                    stock.Variant = variant;
+                    stock.Color = color;
+
+                    var newStock = await stockProcess.Create(stock);
+                    await stockProcess.StockEntry(newStock, 100);
+                }
+            }
+        }
+
+        public async Task CreateSale(Product product)
+        {
+            var saleProcess = _serviceProvider.GetService<SaleProcess>();
+            var cityProcess = _serviceProvider.GetService<CityProcess>();
+            var originSaleProcess = _serviceProvider.GetService<OriginSaleProcess>();
+
+            var city = await cityProcess.Get("1842");
+            var originSale = await originSaleProcess.Get("DKL");
+            var variant = product.Variants.First();
+            var color = variant.ColorsHex.First();
+            var total = 30;
+            var count = 1;
+
+
+            while (count <= total)
+            {
+                Console.WriteLine($"{total} => {count}");
+                var sale = new Sale();
+                sale.OriginSale = originSale;
+                sale.Date = DateTime.Now.Date;
+                sale.DeliveryDate = DateTime.Now.Date;
+                sale.DeliveryStartTime = new TimeSpan(9, 0, 0);
+                sale.DeliveryEndTime = new TimeSpan(21, 0, 0);
+                sale.BusinessName = "Nombre " + count;
+                sale.City = city;
+                sale.Address = "Domicilio " + count;
+                sale.Phone = "+5491127195268";
+                sale.GrossPrice = variant.Price;
+                sale.ShippingPrice = 6000;
+                sale.TotalPrice = variant.Price;
+                sale.SaleDetails = new List<SaleDetail>() { new SaleDetail { Id = 0, Product = product, Variant = variant, Color = color, Count = 1, Price = variant.SalePrice, IsExtra = false } };
+
+                await saleProcess.Create(sale);
+
+                count++;
+            }
         }
 
         public void ConfigureProduct(Product product)
@@ -871,6 +963,43 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
             ");
 
             SQLs.Add(@"
+                CREATE TABLE dbo.Driver (
+                  Id            BIGINT IDENTITY(1,1) CONSTRAINT PK_Driver PRIMARY KEY,
+                  SearchString  NVARCHAR(MAX) NOT NULL,
+                  CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  RemoveDate    DATETIME2 NULL,
+                  UpdateDate    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  Version       BIGINT    NOT NULL DEFAULT 1,
+                  Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+                  IsDeleted     BIT NOT NULL DEFAULT 0,
+                  FirstName     NVARCHAR(200) NOT NULL,
+                  LastName      NVARCHAR(200) NOT NULL,
+                  Dni           NVARCHAR(200) NOT NULL
+                );
+            ");
+
+            SQLs.Add(@"
+                CREATE SEQUENCE RoadMapNumberSeq START WITH 1 INCREMENT BY 1;
+
+                CREATE TABLE dbo.RoadMap (
+                  Id                BIGINT IDENTITY(1,1) CONSTRAINT PK_RoadMap PRIMARY KEY,
+                  SearchString      NVARCHAR(MAX) NOT NULL,
+                  CreationDate      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  RemoveDate        DATETIME2 NULL,
+                  UpdateDate        DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  Version           BIGINT    NOT NULL DEFAULT 1,
+                  Guid              UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+                  IsDeleted         BIT NOT NULL DEFAULT 0,
+                  Number            BIGINT DEFAULT NEXT VALUE FOR RoadMapNumberSeq,
+                  State             NVARCHAR(100) NOT NULL,
+                  DriverId          BIGINT NOT NULL CONSTRAINT FK_Sale_Driver REFERENCES dbo.Driver(Id),
+                  Date              DATETIME2 NOT NULL,
+                  TravelDate        DATETIME2 NULL DEFAULT SYSUTCDATETIME(),
+                  CompletionDate    DATETIME2 NULL DEFAULT SYSUTCDATETIME()
+                );
+            ");
+
+            SQLs.Add(@"
                 CREATE SEQUENCE SaleNumberSeq START WITH 1000 INCREMENT BY 1;
 
 
@@ -928,6 +1057,15 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   Count             INT NOT NULL,
                   Price             DECIMAL(18,2) NOT NULL,
                   IsExtra           BIT NOT NULL
+                );
+            ");
+
+            SQLs.Add(@"
+                CREATE TABLE dbo.RoadMapSale (
+                  Id                BIGINT IDENTITY(1,1) CONSTRAINT PK_RoadMapSale PRIMARY KEY,
+                  RoadMapId         BIGINT NOT NULL CONSTRAINT FK_RoadMapSale_RoadMap REFERENCES dbo.RoadMap(Id),
+                  SaleId            BIGINT NOT NULL CONSTRAINT FK_RoadMapSale_Sale REFERENCES dbo.Sale(Id),
+                  SortOrder         INT NOT NULL
                 );
             ");
         }

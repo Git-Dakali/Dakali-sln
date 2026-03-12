@@ -3,9 +3,11 @@ using Dakali.Domine;
 using DK.Domain.GeographicLocation;
 using DK.Domain.Locations;
 using DK.Domain.Products;
+using DK.Domain.RoadMaps;
 using DK.Domain.Sales;
 using DK.WebApi.ViewModel;
 using DK.WebApi.ViewModel.GeographicLocation;
+using DK.WebApi.ViewModel.RoadMaps;
 using DK.WebApi.ViewModel.Sales;
 
 namespace DK.WebApi
@@ -62,7 +64,12 @@ namespace DK.WebApi
             CreateMap<Sale, SaleResponse>();
             CreateMap<TaxStatusRequest, TaxStatus>();
             CreateMap<TaxStatus, TaxStatusResponse>();
-
+            CreateMap<DriverRequest, Driver>();
+            CreateMap<Driver, DriverResponse>();
+            CreateMap<RoadMapRequest, RoadMap>();
+            CreateMap<RoadMap, RoadMapResponse>();
+            CreateMap<RoadMapSaleRequest, RoadMapSale>();
+            CreateMap<RoadMapSale, RoadMapSaleResponse>();
         }
     }
 }
