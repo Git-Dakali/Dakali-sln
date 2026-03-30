@@ -21,7 +21,7 @@ namespace DK.Domain.Products
 
         public override string ToString()
         {
-            return $"{SortOrder}-{Hex}";
+            return $"{Name} {Sku}";
         }
     }
 }

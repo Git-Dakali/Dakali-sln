@@ -15,7 +15,7 @@ namespace DK.Domain.Products
 
         public override string ToString()
         {
-            return $"{SortOrder}-{Name}";
+            return $"{Name}";
         }
     }
 }

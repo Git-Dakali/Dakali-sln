@@ -17,7 +17,7 @@ namespace DK.Domain.Products
 
         public override string ToString()
         {
-            return $"{Code} [ {string.Join(", ", VariantNames)} ]";
+            return $"{Code} [ {string.Join(" , ", VariantNames)} ]";
         }
     }
 }

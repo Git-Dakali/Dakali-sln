@@ -12,5 +12,10 @@ namespace DK.Domain.GeographicLocation
         {
             Name = string.Empty;
         }
+
+        public override string ToString()
+        {
+            return $"{Code} {Name}";
+        }
     }
 }

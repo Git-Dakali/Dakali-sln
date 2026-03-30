@@ -12,5 +12,10 @@ namespace DK.Domain.Sales
         public decimal Price { get; set; }
         public bool IsExtra { get; set; }
         public Stock Stock { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Product?.Model?.Code} {Product?.Name} {Variant?.Name} {Color?.Name}";
+        }
     }
 }

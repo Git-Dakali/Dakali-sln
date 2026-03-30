@@ -1,5 +1,5 @@
 ﻿using DK.WebApi.ViewModel.Base;
-using DK.WebApi.ViewModel.GeographicLocation;
+using DK.WebApi.ViewModel.GeographicLocation.Cities;
 
 namespace DK.WebApi.ViewModel.Sales
 {
@@ -24,6 +24,8 @@ namespace DK.WebApi.ViewModel.Sales
         public decimal Discounts { get; set; }
         public decimal TotalPrice { get; set; }
         public decimal ShippingPrice { get; set; }
+        public decimal Latitude { get; set; }
+        public decimal Longitude { get; set; }
         public TaxStatusRequest? TaxStatus { get; set; }
         public OriginSaleRequest? OriginSale { get; set; }
         public StoredFileRequest? PdfInvoice { get; set; }

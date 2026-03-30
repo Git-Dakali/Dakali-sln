@@ -1,5 +1,7 @@
-﻿using Dakali.Interface.Connection;
+﻿using Dakali.Domine;
+using Dakali.Interface.Connection;
 using Dapper;
+using DK.Domain.GeographicLocation;
 using DK.Domain.Products;
 using DK.Domain.Sales;
 using DK.Repositories.GeographicLocation;
@@ -7,6 +9,7 @@ using DK.Repositories.Interface.Base;
 using DK.Repositories.Products;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,7 +41,7 @@ namespace DK.Repositories.Sales
             INSERT INTO dbo.Sale (Identifier, ArcaNumber, Dni, Cuit, Date, DeliveryDate, DeliveryStartTime, DeliveryEndTime, BusinessName, Address, Floor, Apartment, Phone, Observation, GrossPrice, Discounts, TotalPrice, ShippingPrice, TaxStatusId, OriginSaleId, PdfInvoiceId, CityId, State, SearchString)
             OUTPUT INSERTED.*
             VALUES (@Identifier, @ArcaNumber, @Dni, @Cuit, @Date, @DeliveryDate, @DeliveryStartTime, @DeliveryEndTime, @BusinessName, @Address, @Floor, @Apartment, @Phone, @Observation, @GrossPrice, @Discounts, @TotalPrice, @ShippingPrice, @TaxStatusId, @OriginSaleId, @PdfInvoiceId, @CityId, @State, @SearchString);";
-
+            entity.State = SaleState.Creado;
             entity.SearchString = entity.ToString();
             var rowDapper = await _session.Connection.QuerySingleAsync(query, 
                 new {
@@ -140,6 +143,60 @@ namespace DK.Repositories.Sales
             return sales;
         }
 
+        public async Task<ResultPage<Sale>> GetPage(SaleFilter saleFilter, CancellationToken cancellationToken = default)
+        {
+            if (saleFilter is null || saleFilter.CountRows <= 0 || saleFilter.Page <= 0)
+                return new ResultPage<Sale>() { Count = 0, Values = new List<Sale>() };
+
+            var query = @" select * from dbo.Sale where IsDeleted = 0";
+            var queryCount = @" select COUNT(*) from dbo.Sale where IsDeleted = 0";
+
+            dynamic filter = new ExpandoObject();
+
+            if (saleFilter.Id != null)
+            {
+                query += " AND Id = @Id";
+                queryCount += " AND Id = @Id";
+
+                filter.Id = saleFilter.Id;
+            }
+
+            if (!string.IsNullOrWhiteSpace(saleFilter.SearchString))
+            {
+                query += " AND CONTAINS(SearchString, @SearchString)";
+                queryCount += " AND CONTAINS(SearchString, @SearchString)";
+
+                var values = (saleFilter.SearchString ?? string.Empty).Split(" ").Select(value => value.Trim()).Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => $"\"{value}*\"");
+
+                filter.SearchString = $"({string.Join(" AND ", values)})";
+            }
+
+            query += @$"
+                ORDER BY Id
+                OFFSET @Offset ROWS
+                FETCH NEXT @PageSize ROWS ONLY;
+
+                {queryCount}
+            ";
+
+            filter.Offset = (saleFilter.Page - 1) * saleFilter.CountRows;
+            filter.PageSize = saleFilter.CountRows;
+
+            var results = await _session.Connection.QueryMultipleAsync(query, filter as object, transaction: _session.Transaction);
+            var rowsDapper = results.Read().ToList();
+            var count = results.Read<long>().Single();
+
+            if (rowsDapper is null)
+                return new ResultPage<Sale>() { Count = 0, Values = new List<Sale>() };
+
+            var sales = new List<Sale>();
+
+            foreach (var row in rowsDapper)
+                sales.Add(await Map(row));
+
+            return new ResultPage<Sale>() { Count = count, Values = sales };
+        }
+
         public async Task<Sale> Update(Sale entity, CancellationToken cancellation = default)
         {
             var query = @"
@@ -175,7 +232,7 @@ namespace DK.Repositories.Sales
             ";
 
             entity.SearchString = entity.ToString();
-            await _session.Connection.QuerySingleAsync<Model>(query, 
+            await _session.Connection.QuerySingleAsync<Sale>(query, 
                 new {
                     entity.Id,
                     Identifier = entity.Identifier ?? string.Empty,
@@ -207,6 +264,20 @@ namespace DK.Repositories.Sales
             return await Get(entity.Id, cancellation) ?? throw new Exception($"La venta {entity.Number} no se encontro para actualizar.");
         }
 
+        public async Task AddLocation(Sale entity, CancellationToken cancellation = default)
+        {
+            var query = @"
+                UPDATE dbo.Sale
+                SET 
+                    Latitude = @Latitude, 
+                    Longitude = @Longitude, 
+                    UpdateDate = SYSUTCDATETIME(),
+                    Version = Version + 1
+                WHERE Id = @Id AND IsDeleted = 0;
+            ";
+            await _session.Connection.ExecuteAsync(query, new { entity.Id, entity.Longitude, entity.Latitude }, transaction: _session.Transaction);
+        }
+
         public async Task<Sale> Map(dynamic rowDapper, CancellationToken cancellation = default)
         {
             var sale = new Sale();
@@ -232,6 +303,8 @@ namespace DK.Repositories.Sales
             sale.Floor = rowDapper.Floor;
             sale.Apartment = rowDapper.Apartment;
             sale.Phone = rowDapper.Phone;
+            sale.Longitude = rowDapper.Longitude ?? 0;
+            sale.Latitude = rowDapper.Latitude ?? 0;
             sale.Observation = rowDapper.Observation;
             sale.GrossPrice = rowDapper.GrossPrice;
             sale.Discounts = rowDapper.Discounts;

@@ -91,21 +91,14 @@ namespace DK.Repositories.RoadMaps
                     SearchString = @SearchString,
                     UpdateDate = SYSUTCDATETIME(),
                     Version = Version + 1
-                OUTPUT INSERTED.*
                 WHERE Id = @Id AND IsDeleted = 0;
             ";
 
             entity.SearchString = entity.ToString();
-            var rowDapperUpdated = await _session.Connection.QuerySingleAsync(query, new { DriverId = entity.Driver?.Id, entity.SearchString, entity.Date, entity.Id}, transaction: _session.Transaction);
-            
-            if (rowDapperUpdated is null)
-                throw new KeyNotFoundException($"La Hoja de Ruta {entity.Number} no se encontro para actualizar.");
+            await _session.Connection.ExecuteAsync(query, new { DriverId = entity.Driver?.Id, entity.SearchString, entity.Date, entity.Id}, transaction: _session.Transaction);
+            await _roadMapSaleRepository.SyncCollection(entity, entity.Sales);
 
-
-            var roadMap = await Map(rowDapperUpdated, cancellation);
-            await _roadMapSaleRepository.SyncCollection(roadMap, entity.Sales);
-
-            return roadMap;
+            return await Get(entity.Id, cancellation);
         }
 
         public async Task<RoadMap?> Map(dynamic? rowDapper, CancellationToken cancellation = default)

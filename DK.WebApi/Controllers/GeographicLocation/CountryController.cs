@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using DK.Domain.GeographicLocation;
 using DK.Process.GeographicLocation;
-using DK.WebApi.ViewModel.GeographicLocation;
+using DK.WebApi.ViewModel.GeographicLocation.Countries;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DK.WebApi.Controllers.GeographicLocation

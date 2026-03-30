@@ -12,5 +12,10 @@ namespace DK.Domain.Products
             Field = string.Empty;
             Value = string.Empty;
         }
+
+        public override string ToString()
+        {
+            return $"{Field} {Value}";
+        }
     }
 }

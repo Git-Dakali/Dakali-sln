@@ -28,7 +28,7 @@ namespace DK.Domain.Products
 
         public override string ToString() 
         {
-            return $"{Product.Model.Code} {Product.Name} {Variant.Name} {Color.Name} {Location.ToString()}";
+            return $"{Product.Model.Code} {Product.Name} {Variant.Name} {Color.Name} {Color.Sku} {Location.ToString()}";
         }
     }
 }

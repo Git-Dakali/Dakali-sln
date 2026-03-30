@@ -13,5 +13,10 @@ namespace DK.Domain.GeographicLocation
         {
             Name = string.Empty;
         }
+
+        public override string ToString()
+        {
+            return $"{Province?.Country?.Name} {Province?.Code} {Province?.Name} {ZipCode} {Name}";
+        }
     }
 }

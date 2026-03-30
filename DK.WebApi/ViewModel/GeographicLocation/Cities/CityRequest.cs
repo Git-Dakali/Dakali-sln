@@ -1,6 +1,7 @@
 ﻿using DK.WebApi.ViewModel.Base;
+using DK.WebApi.ViewModel.GeographicLocation.Provinces;
 
-namespace DK.WebApi.ViewModel.GeographicLocation
+namespace DK.WebApi.ViewModel.GeographicLocation.Cities
 {
     public class CityRequest : RequestGuid
     {

@@ -1,4 +1,5 @@
-﻿using DK.Domain.GeographicLocation;
+﻿using Dakali.Domine;
+using DK.Domain.GeographicLocation;
 using DK.Repositories.GeographicLocation;
 using DK.Validator.GeographicLocation;
 using System.Collections.Generic;
@@ -21,6 +22,11 @@ namespace DK.Process.GeographicLocation
         public async Task<IEnumerable<City>> GetAll(CancellationToken cancellationToken = default)
         {
             return await _cityRepository.GetAll(cancellationToken);
+        }
+
+        public async Task<ResultPage<City>> GetPage(CityFilter cityFilter, CancellationToken cancellationToken = default)
+        {
+            return await _cityRepository.GetPage(cityFilter, cancellationToken);
         }
 
         public async Task<City> Get(long id, CancellationToken cancellationToken = default)

@@ -20,5 +20,10 @@ namespace DK.Domain.RoadMaps
         public Driver Driver { get; set; }
         public RoadMapState State { get; set; }
         public IEnumerable<RoadMapSale> Sales { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Number} {Driver.ToString()} {State.ToString()}";
+        }
     }
 }

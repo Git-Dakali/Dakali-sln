@@ -11,5 +11,10 @@ namespace DK.Domain.Sales
         {
             Name = string.Empty;
         }
+
+        public override string ToString()
+        {
+            return $"{Code} {Name}";
+        }
     }
 }

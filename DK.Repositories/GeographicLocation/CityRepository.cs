@@ -1,12 +1,12 @@
-﻿using Dakali.Interface.Connection;
+﻿using Dakali.Domine;
+using Dakali.Interface.Connection;
 using Dapper;
 using DK.Domain.GeographicLocation;
 using DK.Repositories.Interface.Base;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
-using System.Reflection.Emit;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,6 +37,74 @@ namespace DK.Repositories.GeographicLocation
                 citys.Add(await Map(row));
 
             return citys;
+        }
+
+        public async Task<ResultPage<City>> GetPage(CityFilter cityFilter, CancellationToken cancellationToken = default)
+        {
+            if (cityFilter is null || cityFilter.CountRows <= 0 || cityFilter.Page <= 0)
+                return new ResultPage<City>() { Count = 0, Values = new List<City>() };
+
+            var query = "SELECT * FROM dbo.City where IsDeleted = 0 ";
+            var queryCount = "SELECT COUNT(*) FROM dbo.City where IsDeleted = 0 ";
+            dynamic filter = new ExpandoObject();
+
+            if (cityFilter.Id != null)
+            {
+                query += " AND Id = @Id";
+                queryCount += " AND Id = @Id";
+
+                filter.Id = cityFilter.Id;
+            }
+
+            if (!string.IsNullOrWhiteSpace(cityFilter.SearchString))
+            {
+                query += " AND SearchString like @SearchString ";
+                queryCount += " AND SearchString like @SearchString ";
+
+                filter.SearchString = $"%{cityFilter.SearchString}%";
+            }
+
+            if (!string.IsNullOrWhiteSpace(cityFilter.Code))
+            {
+                query += " AND Code = @Code";
+                queryCount += " AND Code = @Code";
+
+                filter.Code = cityFilter.Code;
+            }
+
+            if (cityFilter.ProvinceId != null)
+            {
+                query += " AND ProvinceId = @ProvinceId";
+                queryCount += " AND ProvinceId = @ProvinceId";
+                filter.ProvinceId = cityFilter.ProvinceId;
+            }
+
+            query += @$"
+                ORDER BY Id
+                OFFSET @Offset ROWS
+                FETCH NEXT @PageSize ROWS ONLY;
+
+                {queryCount}
+            ";
+
+            filter.Offset = (cityFilter.Page - 1) * cityFilter.CountRows;
+            filter.PageSize = cityFilter.CountRows;
+
+
+
+            var results = await _session.Connection.QueryMultipleAsync(query, filter as object, transaction: _session.Transaction);
+            var rows = results.Read().ToList();
+            var count = results.Read<long>().Single();
+
+            if (rows is null)
+                return new ResultPage<City>() { Count = 0, Values = new List<City>() };
+
+            var citys = new List<City>();
+
+            foreach (var row in rows)
+                citys.Add(await Map(row));
+
+            return new ResultPage<City>() { Count = count, Values = citys};
         }
 
         public async Task<City> Get(long id, CancellationToken cancellation = default)

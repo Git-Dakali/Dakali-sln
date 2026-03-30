@@ -1,6 +1,10 @@
 ﻿using AutoMapper;
+using DK.Domain.GeographicLocation;
 using DK.Domain.Sales;
+using DK.Process.GeographicLocation;
 using DK.Process.Sales;
+using DK.WebApi.ViewModel.Base;
+using DK.WebApi.ViewModel.GeographicLocation.Cities;
 using DK.WebApi.ViewModel.Sales;
 using Microsoft.AspNetCore.Mvc;
 
@@ -25,6 +29,13 @@ namespace DK.WebApi.Controllers.Sales
         {
             var products = await _saleProcess.GetAll(cancellation);
             return _mapper.Map<IEnumerable<SaleResponse>>(products);
+        }
+
+        [HttpPost("GetPage")]
+        public async Task<ResultPageResponse<SaleResponse>> GetPage([FromBody] SaleFilter cityFilter)
+        {
+            var resultPage = await _saleProcess.GetPage(cityFilter);
+            return _mapper.Map<ResultPageResponse<SaleResponse>>(resultPage);
         }
 
         [HttpGet("GetById")]
@@ -53,6 +64,12 @@ namespace DK.WebApi.Controllers.Sales
         {
             var product = await _saleProcess.Update(_mapper.Map<Sale>(data), cancellation);
             return _mapper.Map<SaleResponse>(product);
+        }
+
+        [HttpPost("AddLocation")]
+        public async Task AddLocation([FromQuery] long SaleId, [FromQuery] decimal longitude, [FromQuery] decimal latitude, CancellationToken cancellation)
+        {
+            await _saleProcess.AddLocation(new Sale() { Id = SaleId, Longitude = longitude, Latitude = latitude }, cancellation);
         }
 
         [HttpPost("Delete")]

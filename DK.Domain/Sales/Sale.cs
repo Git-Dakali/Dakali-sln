@@ -3,6 +3,7 @@ using Dakali.Domine.Base;
 using DK.Domain.GeographicLocation;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace DK.Domain.Sales
 {
@@ -42,11 +43,18 @@ namespace DK.Domain.Sales
         public decimal Discounts { get; set; }
         public decimal TotalPrice { get; set; }
         public decimal ShippingPrice { get; set; }
+        public decimal Latitude { get; set; }
+        public decimal Longitude { get; set; }
         public TaxStatus TaxStatus { get; set; }
         public OriginSale OriginSale { get; set; }
         public StoredFile PdfInvoice { get; set; }
         public City City { get; set; }
         public SaleState State { get; set; }
         public IEnumerable<SaleDetail> SaleDetails { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Identifier} {Number} {ArcaNumber} {Dni} {Cuit} {Date.ToString("dd-MM-yyyy")} {DeliveryDate.ToString("dd-MM-yyyy")} {BusinessName} {Phone} {TaxStatus?.Code} {TaxStatus?.Name} {OriginSale?.Code} {OriginSale?.Name} {Address} {City?.ZipCode} {City?.Name} {State.ToString()} [ {string.Join(" , ", SaleDetails.Select(x => x.ToString()))} ]";
+        }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using DK.WebApi.ViewModel.Base;
 
-namespace DK.WebApi.ViewModel.GeographicLocation
+namespace DK.WebApi.ViewModel.GeographicLocation.Countries
 {
     public class CountryResponse : ResponseCode
     {

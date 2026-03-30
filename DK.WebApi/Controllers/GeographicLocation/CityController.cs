@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using DK.Domain.GeographicLocation;
 using DK.Process.GeographicLocation;
-using DK.WebApi.ViewModel.GeographicLocation;
+using DK.WebApi.ViewModel.Base;
+using DK.WebApi.ViewModel.GeographicLocation.Cities;
+using DK.WebApi.ViewModel.GeographicLocation.Provinces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DK.WebApi.Controllers.GeographicLocation
@@ -22,6 +24,13 @@ namespace DK.WebApi.Controllers.GeographicLocation
         {
             var entities = await _cityProcess.GetAll();
             return _mapper.Map<IEnumerable<CityResponse>>(entities);
+        }
+
+        [HttpPost("GetPage")]
+        public async Task<ResultPageResponse<CityResponse>> GetPage([FromBody] CityFilter cityFilter)
+        {
+            var resultPage = await _cityProcess.GetPage(cityFilter);
+            return _mapper.Map<ResultPageResponse<CityResponse>>(resultPage);
         }
 
         [HttpPost("GetByCity")]

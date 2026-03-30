@@ -72,6 +72,13 @@ namespace DK.Validator.RoadMaps
 
         public async Task Sales(RoadMap roadMap, CancellationToken cancellationToken = default)
         {
+            if (roadMap.Sales != null)
+            {
+                var sales = roadMap.Sales.GroupBy(s => s.Sale.Id).ToList();
+                if (sales.Any(s => s.Count() > 1))
+                    throw new Exception("Existe ventas asignado mas de una vez.");
+            }
+
             if (roadMap.State == RoadMapState.Creado)
                 return;
 

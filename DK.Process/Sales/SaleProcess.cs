@@ -1,4 +1,5 @@
-﻿using DK.Domain.Locations;
+﻿using Dakali.Domine;
+using DK.Domain.Locations;
 using DK.Domain.Sales;
 using DK.Process.Locations;
 using DK.Process.Product;
@@ -32,6 +33,11 @@ namespace DK.Process.Sales
             return await _saleRepository.GetAll(cancellationToken);
         }
 
+        public async Task<ResultPage<Sale>> GetPage(SaleFilter saleFilter, CancellationToken cancellationToken = default)
+        {
+            return await _saleRepository.GetPage(saleFilter, cancellationToken);
+        }
+
         public async Task<Sale> Get(long id, CancellationToken cancellationToken = default)
         {
             return await _saleRepository.Get(id, cancellationToken);
@@ -60,6 +66,11 @@ namespace DK.Process.Sales
             await _saleValidator.Update(product, cancellationToken);
 
             return await _saleRepository.Update(product, cancellationToken);
+        }
+
+        public async Task AddLocation(Sale entity, CancellationToken cancellation = default)
+        {
+            await _saleRepository.AddLocation(entity, cancellation);
         }
 
         public async Task Delete(Sale product, CancellationToken cancellationToken = default)
