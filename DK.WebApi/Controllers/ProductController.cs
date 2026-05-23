@@ -1,7 +1,11 @@
 ﻿using AutoMapper;
 using DK.Domain.Products;
+using DK.Domain.Sales;
 using DK.Process.Product;
+using DK.Process.Sales;
 using DK.WebApi.ViewModel;
+using DK.WebApi.ViewModel.Base;
+using DK.WebApi.ViewModel.Sales;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DK.WebApi.Controllers
@@ -24,6 +28,13 @@ namespace DK.WebApi.Controllers
         {
             var products = await _productProcess.GetAll();
             return _mapper.Map<IEnumerable<ProductResponse>>(products);
+        }
+
+        [HttpPost("GetPage")]
+        public async Task<ResultPageResponse<ProductResponse>> GetPage([FromBody] ProductFilter cityFilter)
+        {
+            var resultPage = await _productProcess.GetPage(cityFilter);
+            return _mapper.Map<ResultPageResponse<ProductResponse>>(resultPage);
         }
 
         [HttpGet("GetById")]

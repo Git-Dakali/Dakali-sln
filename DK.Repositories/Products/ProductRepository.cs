@@ -1,10 +1,11 @@
-﻿using Dakali.Interface.Connection;
+﻿using Dakali.Domine;
+using Dakali.Interface.Connection;
 using Dapper;
 using DK.Domain.Products;
 using DK.Repositories.Interface.Base;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -67,26 +68,61 @@ namespace DK.Repositories.Products
             var list = new List<Product>();
 
             foreach (var row in rows)
-            {
-                var product = new Product();
-
-                product.Id = row.Id;
-                product.SearchString = row.SearchString;
-                product.CreationDate = row.CreationDate;
-                product.UpdateDate = row.UpdateDate;
-                product.RemoveDate = row.RemoveDate;
-                product.IsDeleted = row.IsDeleted;
-                product.Guid = row.Guid;
-                product.Version = row.Version;
-                product.Name = row.Name;
-                product.Description = row.Description;
-                product.Model = await _modelRepository.Get(row.ModelId, cancellation);
-                product.Variants = await _variantRepository.Get(product, cancellation);
-
-                list.Add(product);
-            }
+                list.Add(await Map(row));
 
             return list;
+        }
+
+        public async Task<ResultPage<Product>> GetPage(ProductFilter productFilter, CancellationToken cancellationToken = default)
+        {
+            if (productFilter is null || productFilter.CountRows <= 0 || productFilter.Page <= 0)
+                return new ResultPage<Product>() { Count = 0, Values = new List<Product>() };
+
+            var query = @" select * from dbo.Product where IsDeleted = 0";
+            var queryCount = @" select COUNT(*) from dbo.Product where IsDeleted = 0";
+
+            dynamic filter = new ExpandoObject();
+
+            if (productFilter.Id != null)
+            {
+                query += " AND Id = @Id";
+                queryCount += " AND Id = @Id";
+
+                filter.Id = productFilter.Id;
+            }
+
+            if (!string.IsNullOrWhiteSpace(productFilter.SearchString))
+            {
+                query += " AND SearchString like @SearchString";
+                queryCount += " AND SearchString like @SearchString";
+
+                filter.SearchString = $"%{productFilter.SearchString}%";
+            }
+
+            query += @$"
+                ORDER BY Id
+                OFFSET @Offset ROWS
+                FETCH NEXT @PageSize ROWS ONLY;
+
+                {queryCount}
+            ";
+
+            filter.Offset = (productFilter.Page - 1) * productFilter.CountRows;
+            filter.PageSize = productFilter.CountRows;
+
+            var results = await _session.Connection.QueryMultipleAsync(query, filter as object, transaction: _session.Transaction);
+            var rowsDapper = results.Read().ToList();
+            var count = results.Read<long>().Single();
+
+            if (rowsDapper is null)
+                return new ResultPage<Product>() { Count = 0, Values = new List<Product>() };
+
+            var sales = new List<Product>();
+
+            foreach (var row in rowsDapper)
+                sales.Add(await Map(row));
+
+            return new ResultPage<Product>() { Count = count, Values = sales };
         }
 
         public async Task<Product> Get(long id, CancellationToken cancellation = default)
@@ -100,22 +136,7 @@ namespace DK.Repositories.Products
             if (rowProduct == null)
                 return null;
 
-            var product = new Product();
-
-            product.Id = rowProduct.Id;
-            product.SearchString = rowProduct.SearchString;
-            product.CreationDate = rowProduct.CreationDate;
-            product.UpdateDate = rowProduct.UpdateDate;
-            product.RemoveDate = rowProduct.RemoveDate;
-            product.IsDeleted = rowProduct.IsDeleted;
-            product.Guid = rowProduct.Guid;
-            product.Version = rowProduct.Version;
-            product.Name = rowProduct.Name;
-            product.Description = rowProduct.Description;
-            product.Model = await _modelRepository.Get(rowProduct.ModelId);
-            product.Variants = await _variantRepository.Get(product);
-
-            return product;
+            return await Map(rowProduct);
         }
 
         public async Task<Product> Update(Product entity, CancellationToken cancellation = default)
@@ -138,6 +159,26 @@ namespace DK.Repositories.Products
             await _variantRepository.SyncCollection(entity, entity.Variants, cancellation);
 
             return await Get(entity.Id, cancellation) ?? throw new KeyNotFoundException($"Product {entity.Model.Code}-{entity.Name} no encontrado para actualizar.");
+        }
+
+        public async Task<Product> Map(dynamic rowDapper)
+        {
+            var product = new Product();
+
+            product.Id = rowDapper.Id;
+            product.SearchString = rowDapper.SearchString;
+            product.CreationDate = rowDapper.CreationDate;
+            product.UpdateDate = rowDapper.UpdateDate;
+            product.RemoveDate = rowDapper.RemoveDate;
+            product.IsDeleted = rowDapper.IsDeleted;
+            product.Guid = rowDapper.Guid;
+            product.Version = rowDapper.Version;
+            product.Name = rowDapper.Name;
+            product.Description = rowDapper.Description;
+            product.Model = await _modelRepository.Get(rowDapper.ModelId);
+            product.Variants = await _variantRepository.Get(product);
+
+            return product;
         }
     }
 }

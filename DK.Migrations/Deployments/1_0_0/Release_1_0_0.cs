@@ -1016,8 +1016,8 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   State             NVARCHAR(100) NOT NULL,
                   DriverId          BIGINT NOT NULL CONSTRAINT FK_Sale_Driver REFERENCES dbo.Driver(Id),
                   Date              DATETIME2 NOT NULL,
-                  TravelDate        DATETIME2 NULL DEFAULT SYSUTCDATETIME(),
-                  CompletionDate    DATETIME2 NULL DEFAULT SYSUTCDATETIME()
+                  TravelDate        DATETIME2 NULL,
+                  CompletionDate    DATETIME2 NULL
                 );
             ");
 
@@ -1085,6 +1085,17 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
             ");
 
             SQLs.Add(@"
+                CREATE TABLE dbo.HistoricSale (
+                  Id                BIGINT IDENTITY(1,1) CONSTRAINT PK_HistoricSale PRIMARY KEY,
+                  CreationDate      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  SaleId            BIGINT NOT NULL CONSTRAINT FK_HistoricSale_Sale REFERENCES dbo.Sale(Id),
+                  State             NVARCHAR(100) NOT NULL,
+                  Description       TEXT NOT NULL,
+                  StoredFileId      BIGINT NULL CONSTRAINT FK_HistoricSale_StoredFile REFERENCES dbo.StoredFile(Id),
+                );
+            ");
+
+            SQLs.Add(@"
                 CREATE TABLE dbo.RoadMapSale (
                   Id                BIGINT IDENTITY(1,1) CONSTRAINT PK_RoadMapSale PRIMARY KEY,
                   RoadMapId         BIGINT NOT NULL CONSTRAINT FK_RoadMapSale_RoadMap REFERENCES dbo.RoadMap(Id),
@@ -1102,6 +1113,9 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
 
                 CREATE FULLTEXT CATALOG SaleCatalog;
                 CREATE FULLTEXT INDEX ON dbo.Sale (SearchString LANGUAGE 3082) KEY INDEX PK_Sale ON SaleCatalog;
+
+                CREATE FULLTEXT CATALOG RoadMapCatalog;
+                CREATE FULLTEXT INDEX ON dbo.RoadMap (SearchString LANGUAGE 3082) KEY INDEX PK_RoadMap ON RoadMapCatalog;
             ";
         }
     }

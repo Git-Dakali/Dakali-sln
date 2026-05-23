@@ -29,7 +29,7 @@ namespace DK.Validator.RoadMaps
                 throw new Exception($"El estado de la hoja de ruta debe ser {RoadMapState.Creado}");
 
             foreach (var sale in roadMap.Sales)
-                await _roadMapsaleValidator.AssignRoadMap(sale, roadMap, cancellationToken);
+                await _roadMapsaleValidator.AssignRoadMap(roadMap, sale, cancellationToken);
         }
 
         public async Task Update(RoadMap roadMap, CancellationToken cancellationToken = default)
@@ -50,6 +50,26 @@ namespace DK.Validator.RoadMaps
 
             if (roadMap.State == RoadMapState.Finalizado)
                 throw new Exception($"No se puede eliminar la Hoja de Ruta {roadMap.Number} en estado Finalizado.");
+        }
+
+        public async Task OnTrip(RoadMap roadMap, CancellationToken cancellationToken = default)
+        {
+            if (!(await Exist(roadMap, cancellationToken)))
+                throw new Exception($"No existe la hoja de ruta {roadMap.Number}");
+
+            if (roadMap.State != RoadMapState.Creado)
+                throw new Exception($"La Hoja de Ruta {roadMap.Number} no se encuentra en estado {RoadMapState.Creado}.");
+
+            await Sales(roadMap, cancellationToken);
+        }
+
+        public async Task FinishTrip(RoadMap roadMap, CancellationToken cancellationToken = default)
+        {
+            if (!(await Exist(roadMap, cancellationToken)))
+                throw new Exception($"No existe la hoja de ruta {roadMap.Number}");
+
+            if (roadMap.State != RoadMapState.EnViaje)
+                throw new Exception($"La Hoja de Ruta {roadMap.Number} no se encuentra en estado {RoadMapState.EnViaje}.");
         }
 
         public async Task<bool> Exist(RoadMap sale, CancellationToken cancellationToken = default)

@@ -1,10 +1,7 @@
 ﻿using AutoMapper;
-using DK.Domain.GeographicLocation;
 using DK.Domain.Sales;
-using DK.Process.GeographicLocation;
 using DK.Process.Sales;
 using DK.WebApi.ViewModel.Base;
-using DK.WebApi.ViewModel.GeographicLocation.Cities;
 using DK.WebApi.ViewModel.Sales;
 using Microsoft.AspNetCore.Mvc;
 
@@ -76,6 +73,114 @@ namespace DK.WebApi.Controllers.Sales
         public async Task Delete([FromBody] SaleRequest data, CancellationToken cancellation)
         {
             await _saleProcess.Delete(_mapper.Map<Sale>(data), cancellation);
+        }
+
+        [HttpPost("Confirm")]
+        public async Task<SaleResponse> Confirm([FromBody] long saleId, CancellationToken cancellation)
+        {
+            var sale = await _saleProcess.Get(saleId, cancellation);
+            var saleUpdated = await _saleProcess.Confirm(sale, cancellation);
+
+            return _mapper.Map<SaleResponse>(saleUpdated);
+        }
+
+        [HttpPost("Prepared")]
+        public async Task<SaleResponse> Prepared([FromBody] long saleId, CancellationToken cancellation)
+        {
+            var sale = await _saleProcess.Get(saleId, cancellation);
+            var saleUpdated = await _saleProcess.Prepared(sale, cancellation);
+
+            return _mapper.Map<SaleResponse>(saleUpdated);
+        }
+
+        [HttpPost("PendingDispatch")]
+        public async Task<SaleResponse> PendingDispatch([FromBody] long saleId, CancellationToken cancellation)
+        {
+            var sale = await _saleProcess.Get(saleId, cancellation);
+            var saleUpdated = await _saleProcess.PendingDispatch(sale, cancellation);
+
+            return _mapper.Map<SaleResponse>(saleUpdated);
+        }
+
+        [HttpPost("OnTrip")]
+        public async Task<SaleResponse> OnTrip([FromBody] long saleId, CancellationToken cancellation)
+        {
+            var sale = await _saleProcess.Get(saleId, cancellation);
+            var saleUpdated = await _saleProcess.OnTrip(sale, cancellation);
+
+            return _mapper.Map<SaleResponse>(saleUpdated);
+        }
+
+        [HttpPost("Deliver")]
+        public async Task<SaleResponse> Deliver([FromBody] long saleId, CancellationToken cancellation)
+        {
+            var sale = await _saleProcess.Get(saleId, cancellation);
+            var saleUpdated = await _saleProcess.Deliver(sale, cancellation);
+
+            return _mapper.Map<SaleResponse>(saleUpdated);
+        }
+
+        [HttpPost("PartialDeliver")]
+        public async Task<SaleResponse> PartialDeliver([FromBody] long saleId, CancellationToken cancellation)
+        {
+            var sale = await _saleProcess.Get(saleId, cancellation);
+            var saleUpdated = await _saleProcess.PartialDelivered(sale, cancellation);
+
+            return _mapper.Map<SaleResponse>(saleUpdated);
+        }
+
+        [HttpPost("Reject")]
+        public async Task<SaleResponse> Reject([FromBody] long saleId, CancellationToken cancellation)
+        {
+            var sale = await _saleProcess.Get(saleId, cancellation);
+            var saleUpdated = await _saleProcess.Reject(sale, cancellation);
+
+            return _mapper.Map<SaleResponse>(saleUpdated);
+        }
+
+        [HttpPost("Cancel")]
+        public async Task<SaleResponse> Cancel([FromBody] long saleId, CancellationToken cancellation)
+        {
+            var sale = await _saleProcess.Get(saleId, cancellation);
+            var saleUpdated = await _saleProcess.Cancel(sale, cancellation);
+
+            return _mapper.Map<SaleResponse>(saleUpdated);
+        }
+
+        [HttpPost("Return")]
+        public async Task<SaleResponse> Return([FromBody] long saleId, CancellationToken cancellation)
+        {
+            var sale = await _saleProcess.Get(saleId, cancellation);
+            var saleUpdated = await _saleProcess.Return(sale, cancellation);
+
+            return _mapper.Map<SaleResponse>(saleUpdated);
+        }
+
+        [HttpPost("Stored")]
+        public async Task<SaleResponse> Stored([FromBody] long saleId, CancellationToken cancellation)
+        {
+            var sale = await _saleProcess.Get(saleId, cancellation);
+            var saleUpdated = await _saleProcess.Stored(sale, cancellation);
+
+            return _mapper.Map<SaleResponse>(saleUpdated);
+        }
+
+        [HttpPost("PendingBilling")]
+        public async Task<SaleResponse> PendingBilling([FromBody] long saleId, CancellationToken cancellation)
+        {
+            var sale = await _saleProcess.Get(saleId, cancellation);
+            var saleUpdated = await _saleProcess.PendingBilling(sale, cancellation);
+
+            return _mapper.Map<SaleResponse>(saleUpdated);
+        }
+
+        [HttpPost("Invoiced")]
+        public async Task<SaleResponse> Invoiced([FromBody] long saleId, CancellationToken cancellation)
+        {
+            var sale = await _saleProcess.Get(saleId, cancellation);
+            var saleUpdated = await _saleProcess.Invoiced(sale, cancellation);
+
+            return _mapper.Map<SaleResponse>(saleUpdated);
         }
     }
 }

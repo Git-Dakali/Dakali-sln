@@ -1,8 +1,6 @@
 ﻿using Dakali.Domine;
 using Dakali.Interface.Connection;
 using Dapper;
-using DK.Domain.GeographicLocation;
-using DK.Domain.Products;
 using DK.Domain.Sales;
 using DK.Repositories.GeographicLocation;
 using DK.Repositories.Interface.Base;
@@ -43,7 +41,7 @@ namespace DK.Repositories.Sales
             VALUES (@Identifier, @ArcaNumber, @Dni, @Cuit, @Date, @DeliveryDate, @DeliveryStartTime, @DeliveryEndTime, @BusinessName, @Address, @Floor, @Apartment, @Phone, @Observation, @GrossPrice, @Discounts, @TotalPrice, @ShippingPrice, @TaxStatusId, @OriginSaleId, @PdfInvoiceId, @CityId, @State, @SearchString);";
             entity.State = SaleState.Creado;
             entity.SearchString = entity.ToString();
-            var rowDapper = await _session.Connection.QuerySingleAsync(query, 
+            var rowDapper = await _session.Connection.QuerySingleAsync(new CommandDefinition(query, 
                 new {
                     Identifier = entity.Identifier ?? string.Empty, 
                     ArcaNumber = entity.ArcaNumber ?? string.Empty,
@@ -69,7 +67,7 @@ namespace DK.Repositories.Sales
                     CityId = entity.City?.Id,
                     State = SaleState.Creado.ToString(),
                     SearchString = entity.SearchString ?? string.Empty 
-                }, transaction: _session.Transaction);
+                }, transaction: _session.Transaction, cancellationToken: cancellation));
 
             if (rowDapper is null)
                 throw new Exception("No se pudo crear la venta");
@@ -87,27 +85,34 @@ namespace DK.Repositories.Sales
             var query = @"
                 UPDATE dbo.Sale
                    SET IsDeleted = 1,
+                       State = @State,
                        RemoveDate = SYSUTCDATETIME(),
                        UpdateDate = SYSUTCDATETIME(),
                        Version = Version + 1
-                 WHERE Id = @id AND IsDeleted = 0;";
+                 WHERE Id = @Id AND IsDeleted = 0;";
 
-            await _session.Connection.ExecuteAsync(query, entity, transaction: _session.Transaction);
+            await _session.Connection.ExecuteAsync(new CommandDefinition(query, new { entity.Id, State = SaleState.Anulado }, transaction: _session.Transaction, cancellationToken: cancellation));
             await _saleDetailRepository.Delete(entity, entity.SaleDetails, cancellation);
         }
 
-        public async Task<Sale> Get(long id, CancellationToken cancellation = default)
+        public async Task<Sale> Get(long id, bool disableIsDeleted, CancellationToken cancellation = default)
         {
-            var query = @"
+            var query = $@"
                 select *
                 from dbo.Sale 
-                where IsDeleted = 0 AND Id = @Id";
-            var rowDapper = await _session.Connection.QuerySingleOrDefaultAsync(query, new { Id = id }, transaction: _session.Transaction);
+                where {(disableIsDeleted ? string.Empty : "IsDeleted = 0 AND")} Id = @Id";
+
+            var rowDapper = await _session.Connection.QuerySingleOrDefaultAsync(new CommandDefinition(query, new { Id = id }, transaction: _session.Transaction, cancellationToken: cancellation));
 
             if (rowDapper is null)
                 return null;
 
             return await Map(rowDapper);
+        }
+
+        public async Task<Sale> Get(long id, CancellationToken cancellation = default)
+        {
+            return await Get(id, false, cancellation);
         }
 
         public async Task<Sale> GetByNumber(long number, CancellationToken cancellation = default)
@@ -116,7 +121,7 @@ namespace DK.Repositories.Sales
                 select *
                 from dbo.Sale 
                 where IsDeleted = 0 AND Number = @Number";
-            var rowDapper = await _session.Connection.QuerySingleOrDefaultAsync(query, new { Number = number }, transaction: _session.Transaction);
+            var rowDapper = await _session.Connection.QuerySingleOrDefaultAsync(new CommandDefinition(query, new { Number = number }, transaction: _session.Transaction, cancellationToken:cancellation));
 
             if (rowDapper is null)
                 return null;
@@ -130,7 +135,7 @@ namespace DK.Repositories.Sales
                 select *
                 from dbo.Sale 
                 where IsDeleted = 0";
-            var rowsDapper = await _session.Connection.QueryAsync(query, new { }, transaction: _session.Transaction);
+            var rowsDapper = await _session.Connection.QueryAsync(new CommandDefinition(query, new { }, transaction: _session.Transaction, cancellationToken: cancellation));
 
             if (rowsDapper is null)
                 return Enumerable.Empty<Sale>();
@@ -182,7 +187,7 @@ namespace DK.Repositories.Sales
             filter.Offset = (saleFilter.Page - 1) * saleFilter.CountRows;
             filter.PageSize = saleFilter.CountRows;
 
-            var results = await _session.Connection.QueryMultipleAsync(query, filter as object, transaction: _session.Transaction);
+            var results = await _session.Connection.QueryMultipleAsync(new CommandDefinition(query, filter as object, transaction: _session.Transaction, cancellationToken: cancellationToken));
             var rowsDapper = results.Read().ToList();
             var count = results.Read<long>().Single();
 
@@ -232,36 +237,50 @@ namespace DK.Repositories.Sales
             ";
 
             entity.SearchString = entity.ToString();
-            await _session.Connection.QuerySingleAsync<Sale>(query, 
-                new {
+            await _session.Connection.QuerySingleAsync<Sale>(new CommandDefinition(query,
+                new
+                {
                     entity.Id,
                     Identifier = entity.Identifier ?? string.Empty,
-                    ArcaNumber = entity.ArcaNumber ?? string.Empty, 
-                    Dni = entity.Dni ?? string.Empty, 
-                    Cuit = entity.Cuit ?? string.Empty, 
-                    entity.Date, 
-                    entity.DeliveryDate, 
-                    entity.DeliveryStartTime, 
-                    entity.DeliveryEndTime, 
-                    BusinessName = entity.BusinessName ?? string.Empty, 
-                    Address = entity.Address ?? string.Empty, 
-                    Floor = entity.Floor ?? string.Empty, 
-                    Apartment = entity.Apartment ?? string.Empty, 
+                    ArcaNumber = entity.ArcaNumber ?? string.Empty,
+                    Dni = entity.Dni ?? string.Empty,
+                    Cuit = entity.Cuit ?? string.Empty,
+                    entity.Date,
+                    entity.DeliveryDate,
+                    entity.DeliveryStartTime,
+                    entity.DeliveryEndTime,
+                    BusinessName = entity.BusinessName ?? string.Empty,
+                    Address = entity.Address ?? string.Empty,
+                    Floor = entity.Floor ?? string.Empty,
+                    Apartment = entity.Apartment ?? string.Empty,
                     Phone = entity.Phone ?? string.Empty,
-                    Observation = entity.Observation ?? string.Empty, 
-                    entity.GrossPrice, 
-                    entity.Discounts, 
-                    entity.TotalPrice, 
-                    entity.ShippingPrice, 
-                    TaxStatusId = entity.TaxStatus?.Id, 
-                    OriginSaleId = entity.OriginSale?.Id, 
-                    PdfInvoiceId = entity.PdfInvoice?.Id, 
-                    CityId = entity.City?.Id, 
+                    Observation = entity.Observation ?? string.Empty,
+                    entity.GrossPrice,
+                    entity.Discounts,
+                    entity.TotalPrice,
+                    entity.ShippingPrice,
+                    TaxStatusId = entity.TaxStatus?.Id,
+                    OriginSaleId = entity.OriginSale?.Id,
+                    PdfInvoiceId = entity.PdfInvoice?.Id,
+                    CityId = entity.City?.Id,
                     SearchString = entity.SearchString ?? string.Empty,
-                }, transaction: _session.Transaction);
+                }, transaction: _session.Transaction, cancellationToken: cancellation));
             await _saleDetailRepository.SyncCollection(entity, entity.SaleDetails, cancellation);
 
             return await Get(entity.Id, cancellation) ?? throw new Exception($"La venta {entity.Number} no se encontro para actualizar.");
+        }
+
+        public async Task UpdateState(long saleId, SaleState saleState, CancellationToken cancellation = default)
+        {
+            var query = @"
+                UPDATE dbo.Sale
+                SET State = @State,
+                    UpdateDate = SYSUTCDATETIME(),
+                    Version = Version + 1
+                WHERE Id = @Id AND IsDeleted = 0;
+            ";
+
+            await _session.Connection.ExecuteAsync(new CommandDefinition(query, new { Id = saleId, State = saleState.ToString() }, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async Task AddLocation(Sale entity, CancellationToken cancellation = default)
@@ -275,7 +294,7 @@ namespace DK.Repositories.Sales
                     Version = Version + 1
                 WHERE Id = @Id AND IsDeleted = 0;
             ";
-            await _session.Connection.ExecuteAsync(query, new { entity.Id, entity.Longitude, entity.Latitude }, transaction: _session.Transaction);
+            await _session.Connection.ExecuteAsync(new CommandDefinition(query, new { entity.Id, entity.Longitude, entity.Latitude }, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async Task<Sale> Map(dynamic rowDapper, CancellationToken cancellation = default)

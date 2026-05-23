@@ -1,16 +1,11 @@
-﻿using DK.Domain.Locations;
+﻿using Dakali.Domine;
 using DK.Domain.RoadMaps;
 using DK.Domain.Sales;
-using DK.Process.Locations;
-using DK.Process.Product;
 using DK.Process.Sales;
 using DK.Repositories.RoadMaps;
-using DK.Repositories.Sales;
 using DK.Validator.RoadMaps;
-using DK.Validator.Sales;
-using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,11 +15,13 @@ namespace DK.Process.RoadMaps
     {
         private RoadMapRepository _roadMapRepository;
         private RoadMapValidator _roadMapValidator;
+        private SaleProcess _saleProcess;
 
-        public RoadMapProcess(RoadMapRepository roadMapRepository, RoadMapValidator roadMapValidator)
+        public RoadMapProcess(RoadMapRepository roadMapRepository, RoadMapValidator roadMapValidator, SaleProcess saleProcess)
         {
             _roadMapRepository = roadMapRepository;
             _roadMapValidator = roadMapValidator;
+            _saleProcess = saleProcess;
             
         }
 
@@ -33,9 +30,19 @@ namespace DK.Process.RoadMaps
             return await _roadMapRepository.GetAll(cancellationToken);
         }
 
+        public async Task<ResultPage<RoadMap>> GetPage(RoadMapFilter roadMapFilter, CancellationToken cancellationToken = default)
+        {
+            return await _roadMapRepository.GetPage(roadMapFilter, cancellationToken);
+        }
+
         public async Task<RoadMap> Get(long id, CancellationToken cancellationToken = default)
         {
             return await _roadMapRepository.Get(id, cancellationToken);
+        }
+
+        public async Task<RoadMap> Get(Sale sale, CancellationToken cancellationToken = default)
+        {
+            return await _roadMapRepository.Get(sale, cancellationToken);
         }
 
         public async Task<RoadMap> Create(RoadMap roadMap, CancellationToken cancellationToken = default)
@@ -57,6 +64,21 @@ namespace DK.Process.RoadMaps
         {
             await _roadMapValidator.Delete(roadMap, cancellationToken);
             await _roadMapRepository.Delete(roadMap, cancellationToken);
+        }
+
+        public async Task OnTrip(RoadMap roadMap, CancellationToken cancellationToken = default)
+        {
+            await _roadMapValidator.OnTrip(roadMap, cancellationToken);
+            await _roadMapRepository.OnTrip(roadMap, cancellationToken);
+
+            foreach (var sale in roadMap.Sales.Select(x => x.Sale))
+                await _saleProcess.OnTrip(sale, cancellationToken);
+        }
+
+        public async Task FinishTrip(RoadMap roadMap, CancellationToken cancellationToken = default)
+        {
+            await _roadMapValidator.FinishTrip(roadMap, cancellationToken);
+            await _roadMapRepository.FinishTrip(roadMap, cancellationToken);
         }
     }
 }

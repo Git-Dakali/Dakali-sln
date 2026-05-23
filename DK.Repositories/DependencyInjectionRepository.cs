@@ -40,6 +40,7 @@ namespace DK.Repositories
             service.AddScoped<DriverRepository>();
             service.AddScoped<RoadMapRepository>();
             service.AddScoped<RoadMapSaleRepository>();
+            service.AddScoped<HistoricSaleRepository>();
         }
     }
 }

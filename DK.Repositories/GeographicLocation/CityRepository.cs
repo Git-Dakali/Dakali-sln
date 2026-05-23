@@ -26,7 +26,7 @@ namespace DK.Repositories.GeographicLocation
         public async Task<IEnumerable<City>> GetAll(CancellationToken cancellation = default)
         {
             var query = "select * from dbo.City where IsDeleted = 0";
-            var rows = await _session.Connection.QueryAsync(query, new { }, transaction: _session.Transaction);
+            var rows = await _session.Connection.QueryAsync(new CommandDefinition(query, new { }, transaction: _session.Transaction, cancellationToken: cancellation));
 
             if (rows is null)
                 return Enumerable.Empty<City>();
@@ -92,7 +92,7 @@ namespace DK.Repositories.GeographicLocation
 
 
 
-            var results = await _session.Connection.QueryMultipleAsync(query, filter as object, transaction: _session.Transaction);
+            var results = await _session.Connection.QueryMultipleAsync(new CommandDefinition(query, filter as object, transaction: _session.Transaction, cancellationToken: cancellationToken));
             var rows = results.Read().ToList();
             var count = results.Read<long>().Single();
 
@@ -110,7 +110,7 @@ namespace DK.Repositories.GeographicLocation
         public async Task<City> Get(long id, CancellationToken cancellation = default)
         {
             var query = "select * from dbo.City where IsDeleted = 0 AND Id = @Id";
-            var row = await _session.Connection.QuerySingleOrDefaultAsync(query, new { Id = id }, transaction: _session.Transaction);
+            var row = await _session.Connection.QuerySingleOrDefaultAsync(new CommandDefinition(query, new { Id = id }, transaction: _session.Transaction, cancellationToken: cancellation));
 
             if (row is null)
                 return null;
@@ -121,7 +121,7 @@ namespace DK.Repositories.GeographicLocation
         public async Task<City> Get(string zipCode, CancellationToken cancellation = default)
         {
             var query = "select * from dbo.City where IsDeleted = 0 AND ZipCode = @ZipCode";
-            var row = await _session.Connection.QueryFirstOrDefaultAsync(query, new { ZipCode = zipCode }, transaction: _session.Transaction);
+            var row = await _session.Connection.QueryFirstOrDefaultAsync(new CommandDefinition(query, new { ZipCode = zipCode }, transaction: _session.Transaction, cancellationToken: cancellation));
 
             if (row is null)
                 return null;
@@ -132,7 +132,7 @@ namespace DK.Repositories.GeographicLocation
         public async Task<IEnumerable<City>> Get(Province province, CancellationToken cancellation = default)
         {
             var query = "select * from dbo.City where IsDeleted = 0 and ProvinceId = @ProvinceId";
-            var rows = await _session.Connection.QueryAsync(query, new { ProvinceId = province.Id }, transaction: _session.Transaction);
+            var rows = await _session.Connection.QueryAsync(new CommandDefinition(query, new { ProvinceId = province.Id }, transaction: _session.Transaction, cancellationToken: cancellation));
 
             if (rows is null)
                 return Enumerable.Empty<City>();
@@ -153,7 +153,7 @@ namespace DK.Repositories.GeographicLocation
             VALUES (@ZipCode, @Name, @ProvinceId, @SearchString);";
 
             entity.SearchString = entity.ToString();
-            var row = await _session.Connection.QuerySingleAsync(query, new { entity.ZipCode, entity.Name, entity.SearchString, ProvinceId = entity.Province.Id}, transaction: _session.Transaction);
+            var row = await _session.Connection.QuerySingleAsync(new CommandDefinition(query, new { entity.ZipCode, entity.Name, entity.SearchString, ProvinceId = entity.Province.Id}, transaction: _session.Transaction, cancellationToken: cancellation));
 
             if (row is null)
                 return null;
@@ -177,7 +177,7 @@ namespace DK.Repositories.GeographicLocation
             ";
 
             entity.SearchString = entity.ToString();
-            var row = await _session.Connection.QuerySingleAsync(query, new { entity.Id, entity.ZipCode, entity.Name, entity.SearchString, ProvinceId = entity.Province.Id}, transaction: _session.Transaction);
+            var row = await _session.Connection.QuerySingleAsync(new CommandDefinition(query, new { entity.Id, entity.ZipCode, entity.Name, entity.SearchString, ProvinceId = entity.Province.Id}, transaction: _session.Transaction, cancellationToken: cancellation));
 
             if (row is null)
                 throw new Exception($"La Localidad {entity.ZipCode}-{entity.Name} no existe para actualizar.");
@@ -195,7 +195,7 @@ namespace DK.Repositories.GeographicLocation
                        Version = Version + 1
                  WHERE Id = @id AND IsDeleted = 0;";
 
-            await _session.Connection.ExecuteAsync(query, entity, transaction: _session.Transaction);
+            await _session.Connection.ExecuteAsync(new CommandDefinition(query, entity, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async Task<City> Map(dynamic rowDapper, CancellationToken cancellation = default)

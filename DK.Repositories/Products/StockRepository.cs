@@ -154,10 +154,8 @@ namespace DK.Repositories.Products
                     Version = Version + 1
                 WHERE Id = @Id AND IsDeleted = 0;
             ";
-            var rowDapper = await _session.Connection.QueryFirstOrDefault<dynamic>(query, new { stock.Id, Count = count }, transaction: _session.Transaction);
+            await _session.Connection.ExecuteAsync(query, new { stock.Id, Count = count }, transaction: _session.Transaction);
 
-            if (rowDapper == null)
-                return null;
 
             return await Get(stock.Id, cancellation);
         }

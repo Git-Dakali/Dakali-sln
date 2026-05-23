@@ -19,19 +19,19 @@ namespace DK.Repositories.GeographicLocation
         public async Task<IEnumerable<Country>> GetAll(CancellationToken cancellation = default)
         {
             var query = "select * from dbo.Country where IsDeleted = 0";
-            return await _session.Connection.QueryAsync<Country>(query, new { }, transaction: _session.Transaction);
+            return await _session.Connection.QueryAsync<Country>(new CommandDefinition(query, new { }, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async Task<Country> Get(long id, CancellationToken cancellation = default)
         {
             var query = "select * from dbo.Country where IsDeleted = 0 AND Id = @Id";
-            return await _session.Connection.QuerySingleOrDefaultAsync<Country>(query, new { Id = id }, transaction: _session.Transaction);
+            return await _session.Connection.QuerySingleOrDefaultAsync<Country>(new CommandDefinition(query, new { Id = id }, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async Task<Country> Get(string code, CancellationToken cancellation = default)
         {
             var query = "select * from dbo.Country where IsDeleted = 0 AND Code = @Code";
-            return await _session.Connection.QuerySingleOrDefaultAsync<Country>(query, new { Code = code }, transaction: _session.Transaction);
+            return await _session.Connection.QuerySingleOrDefaultAsync<Country>(new CommandDefinition(query, new { Code = code }, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async Task<Country> Create(Country category, CancellationToken cancellation = default)
@@ -42,7 +42,7 @@ namespace DK.Repositories.GeographicLocation
             VALUES (@Code, @Name, @SearchString);";
 
             category.SearchString = category.ToString();
-            return await _session.Connection.QuerySingleAsync<Country>(query, category, transaction: _session.Transaction);
+            return await _session.Connection.QuerySingleAsync<Country>(new CommandDefinition(query, category, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async Task<Country> Update(Country category, CancellationToken cancellation = default)
@@ -59,7 +59,7 @@ namespace DK.Repositories.GeographicLocation
             ";
 
             category.SearchString = category.ToString();
-            var newCategory = await _session.Connection.QuerySingleAsync<Country>(query, category, transaction: _session.Transaction);
+            var newCategory = await _session.Connection.QuerySingleAsync<Country>(new CommandDefinition(query, category, transaction: _session.Transaction, cancellationToken: cancellation));
 
 
             return newCategory ?? throw new KeyNotFoundException($"Pais {category.Id}-{category.Name} no encontrado para actualizar.");
@@ -75,7 +75,7 @@ namespace DK.Repositories.GeographicLocation
                        Version = Version + 1
                  WHERE Id = @id AND IsDeleted = 0;";
 
-            await _session.Connection.ExecuteAsync(query, Category, transaction: _session.Transaction);
+            await _session.Connection.ExecuteAsync(new CommandDefinition(query, Category, transaction: _session.Transaction, cancellationToken: cancellation));
         }
     }
 }

@@ -27,19 +27,5 @@ namespace DK.WebApi.Controllers.RoadMaps
             var details = await _roadMapSaleProcess.Get(new RoadMap() { Id = roadMapId }, cancellationToken);
             return _mapper.Map<IEnumerable<RoadMapSaleResponse>>(details);
         }
-
-        [HttpPost("AssignRoadMap")]
-        public async Task AssignRoadMap([FromBody] RoadMapSaleRequest data, [FromQuery(Name = "RoadMapId")] long roadMapId, CancellationToken cancellationToken = default)
-        {
-            var roadMap = await _roadMapProcess.Get(roadMapId, cancellationToken);
-            await _roadMapSaleProcess.AssignRoadMap(_mapper.Map<RoadMapSale>(data), roadMap, cancellationToken);
-        }
-
-        [HttpPost("UnassignRoadMap")]
-        public async Task UnassignRoadMap([FromBody] RoadMapSaleRequest data, [FromQuery(Name = "RoadMapId")] long roadMapId, CancellationToken cancellationToken = default)
-        {
-            var roadMap = await _roadMapProcess.Get(roadMapId, cancellationToken);
-            await _roadMapSaleProcess.UnassignRoadMap(_mapper.Map<RoadMapSale>(data), roadMap, cancellationToken);
-        }
     }
 }

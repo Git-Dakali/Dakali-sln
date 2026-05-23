@@ -15,7 +15,7 @@ namespace DK.Validator.RoadMaps
             _roadMapRepository = roadMapRepository;
         }
 
-        public async Task AssignRoadMap(RoadMapSale roadMapSale, RoadMap roadMap, CancellationToken cancellationToken = default)
+        public async Task AssignRoadMap(RoadMap roadMap, RoadMapSale roadMapSale, CancellationToken cancellationToken = default)
         {
             var roadMapPersisted = await _roadMapRepository.Get(roadMapSale.Sale, cancellationToken);
 
@@ -26,7 +26,7 @@ namespace DK.Validator.RoadMaps
                 throw new Exception($"La venta {roadMapSale.Sale.Number}, no se puede asignar a la hoja de ruta {roadMap.Number} por que se encuentra Finalizado");
         }
 
-        public async Task UnassignRoadMap(RoadMapSale roadMapSale, RoadMap roadMap, CancellationToken cancellationToken = default)
+        public async Task UnassignRoadMap(RoadMap roadMap, RoadMapSale roadMapSale, CancellationToken cancellationToken = default)
         {
             var roadMapPersisted = await _roadMapRepository.Get(roadMapSale.Sale, cancellationToken);
 

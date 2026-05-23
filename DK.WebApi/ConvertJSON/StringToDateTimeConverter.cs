@@ -13,7 +13,7 @@ namespace DK.WebApi.ConvertAutoMapper
             if (string.IsNullOrWhiteSpace(value))
                 return null;
 
-            var formatos = new[] { "dd-MM-yyyy" };
+            var formatos = new[] { "dd-MM-yyyy", "dd-MM-yyyy HH:mm" };
 
             if (DateTime.TryParseExact(value, formatos, CultureInfo.InvariantCulture, DateTimeStyles.None, out var fecha))
                 return fecha;
@@ -23,7 +23,7 @@ namespace DK.WebApi.ConvertAutoMapper
 
         public override void Write(Utf8JsonWriter writer, DateTime? value, JsonSerializerOptions options)
         {
-            writer.WriteStringValue(value?.ToString("dd-MM-yyyy"));
+            writer.WriteStringValue(value?.ToString("dd-MM-yyyy HH:mm"));
         }
     }
 }

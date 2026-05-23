@@ -30,6 +30,7 @@ namespace DK.Process
             service.AddScoped<DriverProcess>();
             service.AddScoped<RoadMapProcess>();
             service.AddScoped<RoadMapSaleProcess>();
+            service.AddScoped<HistoricSaleProcess>();
         }
     }
 }

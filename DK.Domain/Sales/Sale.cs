@@ -11,15 +11,18 @@ namespace DK.Domain.Sales
     { 
         Creado = 1,
         Confirmado = 2,
-        AsignadoRuta = 4,
-        EnViaje = 5,
-        Entregado = 6,
-        PendienteFacturar = 7,
-        Facturado = 8,
-        Finalizado = 9,
-        Devuelto = 10,
-        Cancelado = 11,
-        Rechazado = 12,
+        Preparado = 3,
+        Anulado = 4,
+        PendienteDespachar = 5,
+        EnViaje = 6,
+        Rechazado = 7,
+        Entregado = 8,
+        PendienteFacturar = 9,
+        Facturado = 10,
+        Devuelto = 11,
+        Almacenado = 12,
+        EntregadoParcial = 13,
+        Cancelado = 14,
     }
 
     public class Sale : EntityGuid
@@ -54,7 +57,7 @@ namespace DK.Domain.Sales
 
         public override string ToString()
         {
-            return $"{Identifier} {Number} {ArcaNumber} {Dni} {Cuit} {Date.ToString("dd-MM-yyyy")} {DeliveryDate.ToString("dd-MM-yyyy")} {BusinessName} {Phone} {TaxStatus?.Code} {TaxStatus?.Name} {OriginSale?.Code} {OriginSale?.Name} {Address} {City?.ZipCode} {City?.Name} {State.ToString()} [ {string.Join(" , ", SaleDetails.Select(x => x.ToString()))} ]";
+            return $"{Identifier} {Number} {ArcaNumber} {Dni} {Cuit} Emision{Date.ToString("dd-MM-yyyy")} Entrega{DeliveryDate.ToString("dd-MM-yyyy")} {BusinessName} {Phone} {TaxStatus?.Code} {TaxStatus?.Name} {OriginSale?.Code} {OriginSale?.Name} {Address} {City?.ZipCode} {City?.Name} {State.ToString()} [ {string.Join(" , ", SaleDetails.Select(x => x.ToString()))} ]";
         }
     }
 }

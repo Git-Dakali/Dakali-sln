@@ -1,6 +1,7 @@
 ﻿using Dakali.Interface.Connection;
 using Dapper;
 using DK.Domain.RoadMaps;
+using DK.Domain.Sales;
 using DK.Repositories.Base;
 using DK.Repositories.Sales;
 using System;
@@ -39,19 +40,31 @@ namespace DK.Repositories.RoadMaps
         {
             var query = @"DELETE dbo.RoadMapSale WHERE RoadMapId = @RoadMapId AND SaleId = @SaleId;";
 
-            await _session.Connection.ExecuteAsync(query, new { RoadMapId = parent.Id, SaleId = entity.Sale.Id }, transaction: _session.Transaction);
+            await _session.Connection.ExecuteAsync(new CommandDefinition(query, new { RoadMapId = parent.Id, SaleId = entity.Sale.Id }, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async override Task Delete(RoadMap parent, IEnumerable<RoadMapSale> entities, CancellationToken cancellation = default)
         {
             var query = @"DELETE dbo.RoadMapSale WHERE RoadMapId = @RoadMapId;";
 
-            await _session.Connection.ExecuteAsync(query, new { RoadMapId = parent.Id }, transaction: _session.Transaction);
+            await _session.Connection.ExecuteAsync(new CommandDefinition(query, new { RoadMapId = parent.Id }, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async override Task<RoadMapSale> Get(RoadMap parent, long id, CancellationToken cancellation = default)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<RoadMapSale> Get(RoadMap parent, Sale sale, CancellationToken cancellation = default)
+        {
+            var sql = @"SELECT * FROM RoadMapSale WHERE RoadMapId = @RoadMapId AND SaleId = @SaleId;";
+
+            var rowDapper = await _session.Connection.QuerySingleOrDefaultAsync(new CommandDefinition(sql, new { RoadMapId = parent.Id, SaleId = sale.Id }, _session.Transaction, cancellationToken: cancellation));
+
+            if (rowDapper is null)
+                return null;
+            
+            return await Map(rowDapper);
         }
 
         public async override Task<IEnumerable<RoadMapSale>> Get(RoadMap parent, CancellationToken cancellation = default)

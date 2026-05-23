@@ -1,4 +1,7 @@
-﻿using DK.Repositories.Products;
+﻿using Dakali.Domine;
+using DK.Domain.Products;
+using DK.Domain.Sales;
+using DK.Repositories.Products;
 using DK.Validator;
 using System.Collections.Generic;
 using System.Threading;
@@ -20,6 +23,11 @@ namespace DK.Process.Product
         public async Task<IEnumerable<Domain.Products.Product>> GetAll(CancellationToken cancellationToken = default)
         {
             return await _productRepository.GetAll(cancellationToken);
+        }
+
+        public async Task<ResultPage<Domain.Products.Product>> GetPage(ProductFilter productFilter, CancellationToken cancellationToken = default)
+        {
+            return await _productRepository.GetPage(productFilter, cancellationToken);
         }
 
         public async Task<Domain.Products.Product> Get(long id, CancellationToken cancellationToken = default)

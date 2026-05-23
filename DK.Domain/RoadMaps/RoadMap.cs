@@ -23,7 +23,7 @@ namespace DK.Domain.RoadMaps
 
         public override string ToString()
         {
-            return $"{Number} {Driver.ToString()} {State.ToString()}";
+            return $"{Number} Emision{Date.ToString("dd-MM-yyyy")} Viaje{TravelDate?.ToString("dd-MM-yyyy")} {Driver.ToString()} {State.ToString()}";
         }
     }
 }

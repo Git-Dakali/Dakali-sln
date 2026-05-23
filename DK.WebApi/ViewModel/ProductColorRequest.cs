@@ -6,6 +6,7 @@ namespace DK.WebApi.ViewModel
     {
         public string Name { get; set; }
         public string Hex { get; set; }
+        public string Sku { get; set; }
         public int SortOrder { get; set; }
         public IList<ImageRequest> Images { get; set; }
     }

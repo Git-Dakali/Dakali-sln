@@ -24,7 +24,7 @@ namespace DK.Repositories.Sales
             VALUES (@Code, @Name, @SearchString);";
 
             entity.SearchString = entity.ToString();
-            return await _session.Connection.QuerySingleAsync<OriginSale>(query, entity, transaction: _session.Transaction);
+            return await _session.Connection.QuerySingleAsync<OriginSale>(new CommandDefinition(query, entity, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async Task Delete(OriginSale entity, CancellationToken cancellation = default)
@@ -37,25 +37,25 @@ namespace DK.Repositories.Sales
                        Version = Version + 1
                  WHERE Id = @id AND IsDeleted = 0;";
 
-            await _session.Connection.ExecuteAsync(query, entity, transaction: _session.Transaction);
+            await _session.Connection.ExecuteAsync(new CommandDefinition(query, entity, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async Task<OriginSale> Get(long id, CancellationToken cancellation = default)
         {
             var query = "select * from dbo.OriginSale where IsDeleted = 0 AND Id = @Id";
-            return await _session.Connection.QuerySingleOrDefaultAsync<OriginSale>(query, new { Id = id }, transaction: _session.Transaction);
+            return await _session.Connection.QuerySingleOrDefaultAsync<OriginSale>(new CommandDefinition(query, new { Id = id }, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async Task<OriginSale> Get(string code, CancellationToken cancellation = default)
         {
             var query = "select * from dbo.OriginSale where IsDeleted = 0 AND Code = @Code";
-            return await _session.Connection.QuerySingleOrDefaultAsync<OriginSale>(query, new { Code = code }, transaction: _session.Transaction);
+            return await _session.Connection.QuerySingleOrDefaultAsync<OriginSale>(new CommandDefinition(query, new { Code = code }, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async Task<IEnumerable<OriginSale>> GetAll(CancellationToken cancellation = default)
         {
             var query = "select * from dbo.OriginSale where IsDeleted = 0";
-            return await _session.Connection.QueryAsync<OriginSale>(query, new { }, transaction: _session.Transaction);
+            return await _session.Connection.QueryAsync<OriginSale>(new CommandDefinition(query, new { }, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async Task<OriginSale> Update(OriginSale entity, CancellationToken cancellation = default)
@@ -72,7 +72,7 @@ namespace DK.Repositories.Sales
             ";
 
             entity.SearchString = entity.ToString();
-            var newOriginSale = await _session.Connection.QuerySingleAsync<OriginSale>(query, entity, transaction: _session.Transaction);
+            var newOriginSale = await _session.Connection.QuerySingleAsync<OriginSale>(new CommandDefinition(query, entity, transaction: _session.Transaction, cancellationToken: cancellation));
 
 
             return newOriginSale ?? throw new KeyNotFoundException($"Origen de Venta {entity.Name} no se encontro para actualizar.");

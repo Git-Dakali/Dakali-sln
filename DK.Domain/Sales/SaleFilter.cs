@@ -19,7 +19,7 @@ namespace DK.Domain.Sales
         public long? TaxStatusId { get; set; }
         public long? OriginSaleId { get; set; }
         public long? CityId { get; set; }
-        public SaleState? State { get; set; }
+        public string? State { get; set; }
         public IEnumerable<string> Skus { get; set; }
     }
 }

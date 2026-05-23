@@ -75,6 +75,9 @@ namespace DK.WebApi
             CreateMap<RoadMapSale, RoadMapSaleResponse>();
             CreateMap<ResultPage<City>, ResultPageResponse<CityResponse>>();
             CreateMap<ResultPage<Sale>, ResultPageResponse<SaleResponse>>();
+            CreateMap<ResultPage<RoadMap>, ResultPageResponse<RoadMapResponse>>();
+            CreateMap<ResultPage<Product>, ResultPageResponse<ProductResponse>>();
+            CreateMap<HistoricSale, HistoricSaleResponse>();
         }
     }
 }
