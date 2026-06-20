@@ -15,29 +15,27 @@ namespace DK.Repositories.Sales
     {
         private readonly ISession _session;
         private ProductRepository _productRepository; 
-        private VariantRepository _variantRepository; 
-        private ProductColorRepository _productColorRepository;
+        private ProductSkuRepository _productSkuRepository;
         private StockRepository _stockRepository;
 
-        public SaleDetailRepository(ISession session, ProductRepository productRepository, VariantRepository variantRepository, ProductColorRepository productColorRepository, StockRepository stockRepository)
+        public SaleDetailRepository(ISession session, ProductRepository productRepository, ProductSkuRepository productSkuRepository, StockRepository stockRepository)
         {
             _session = session;
             _productRepository = productRepository;
-            _variantRepository = variantRepository;
-            _productColorRepository = productColorRepository;
             _stockRepository = stockRepository;
+            _productSkuRepository = productSkuRepository;
         }
 
         public async override Task<SaleDetail> Create(Sale parent, SaleDetail entity, CancellationToken cancellation = default)
         {
             const string sql = @"
-                INSERT INTO dbo.SaleDetail (SaleId, ProductId, VariantId, ProductColorId, StockId, Count, Price, IsExtra, SearchString)
+                INSERT INTO dbo.SaleDetail (SaleId, ProductId, ProductSkuId, StockId, Count, Price, IsExchangeItem, SearchString)
                 OUTPUT INSERTED.*
-                VALUES (@SaleId, @ProductId, @VariantId, @ProductColorId, @StockId, @Count, @Price, @IsExtra, @SearchString);";
+                VALUES (@SaleId, @ProductId, @ProductSkuId, @StockId, @Count, @Price, @IsExchangeItem, @SearchString);";
 
             entity.SearchString = entity.ToString();
             var rowDapper = await _session.Connection.QuerySingleAsync(
-                new CommandDefinition(sql, new { SaleId = parent.Id, ProductId = entity.Product.Id, VariantId = entity.Variant.Id, ProductColorId = entity.Color.Id, StockId = entity.Stock?.Id, entity.Count, entity.Price, entity.IsExtra, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
+                new CommandDefinition(sql, new { SaleId = parent.Id, ProductId = entity.Product.Id, ProductSkuId = entity.ProductSku.Id, StockId = entity.Stock?.Id, entity.Count, entity.Price, entity.IsExchangeItem, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
 
             if (rowDapper is null)
                 return null;
@@ -56,6 +54,9 @@ namespace DK.Repositories.Sales
                  WHERE SaleId = @SaleId AND Id = @Id AND IsDeleted = 0;";
 
             await _session.Connection.ExecuteAsync(new CommandDefinition(sql, new { SaleId = parent.Id, entity.Id }, _session.Transaction, cancellationToken: cancellation));
+
+            if (entity.Stock != null)
+                await _stockRepository.CancelReserved(entity.Stock, entity.Count);
         }
 
         public async override Task Delete(Sale parent, IEnumerable<SaleDetail> entities, CancellationToken cancellation = default)
@@ -108,11 +109,10 @@ namespace DK.Repositories.Sales
         {
             return entity.Id != persited.Id ||
                 entity.Product?.Id != persited.Product?.Id ||
-                entity.Variant?.Id != persited.Variant?.Id ||
-                entity.Color?.Id != persited.Color?.Id ||
+                entity.ProductSku?.Id != persited.ProductSku?.Id ||
                 entity.Count != persited.Count ||
                 entity.Price != persited.Price ||
-                entity.IsExtra != persited.IsExtra ||
+                entity.IsExchangeItem != persited.IsExchangeItem ||
                 entity.Stock?.Id != persited.Stock?.Id;
         }
 
@@ -122,11 +122,11 @@ namespace DK.Repositories.Sales
                 UPDATE dbo.SaleDetail
                    SET ProductId        = @ProductId,
                        VariantId        = @VariantId,
-                       ProductColorId   = @ProductColorId,
+                       ProductSkuId     = @ProductSkuId,
                        StockId          = @StockId,
                        Count            = @Count, 
                        Price            = @Price,
-                       IsExtra          = @IsExtra,
+                       IsExchangeItem   = @IsExchangeItem,
                        SearchString     = @SearchString,
                        UpdateDate       = SYSUTCDATETIME(),
                        Version          = Version + 1
@@ -135,10 +135,10 @@ namespace DK.Repositories.Sales
 
             entity.SearchString = entity.ToString();
             var rowDapper = await _session.Connection.QuerySingleOrDefaultAsync(
-                new CommandDefinition(sql, new { SaleId = parent.Id, entity.Id, ProductId = entity.Product?.Id, VariantId = entity.Variant?.Id, ProductColorId = entity.Color?.Id, StockId = entity.Stock?.Id, entity.Count, entity.Price, entity.IsExtra, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
+                new CommandDefinition(sql, new { SaleId = parent.Id, entity.Id, ProductId = entity.Product?.Id, ProductSkuId = entity.ProductSku?.Id, StockId = entity.Stock?.Id, entity.Count, entity.Price, entity.IsExchangeItem, entity.SearchString }, _session.Transaction, cancellationToken: cancellation));
 
             if (rowDapper is null)
-                throw new KeyNotFoundException($"El detalle {entity.Product.Name}-{entity.Variant.Name}-{entity.Color.Name} no se encontro para actualizar.");
+                throw new KeyNotFoundException($"El detalle {entity.Product.Name}-{entity.ProductSku.Variant.Name}-{entity.ProductSku.Color.Name} no se encontro para actualizar.");
 
 
             return await Map(rowDapper, cancellation);
@@ -160,7 +160,7 @@ namespace DK.Repositories.Sales
                 new CommandDefinition(sql, new { SaleId = parent.Id, saleDetail.Id, StockId = stock.Id, saleDetail.SearchString }, _session.Transaction, cancellationToken: cancellation));
 
             if (rowDapper is null)
-                throw new KeyNotFoundException($"El detalle {saleDetail.Product.Name}-{saleDetail.Variant.Name}-{saleDetail.Color.Name} no se encontro para actualizar.");
+                throw new KeyNotFoundException($"El detalle {saleDetail.Product.Name}-{saleDetail.ProductSku.Variant.Name}-{saleDetail.ProductSku.Color.Name} no se encontro para actualizar.");
         }
 
         public async Task UnassignStock(Sale parent, SaleDetail saleDetail, CancellationToken cancellation = default)
@@ -179,7 +179,7 @@ namespace DK.Repositories.Sales
                 new CommandDefinition(sql, new { SaleId = parent.Id, saleDetail.Id, saleDetail.SearchString }, _session.Transaction, cancellationToken: cancellation));
 
             if (rowDapper is null)
-                throw new KeyNotFoundException($"El detalle {saleDetail.Product.Name}-{saleDetail.Variant.Name}-{saleDetail.Color.Name} no se encontro para actualizar.");
+                throw new KeyNotFoundException($"El detalle {saleDetail.Product.Name}-{saleDetail.ProductSku.Variant.Name}-{saleDetail.ProductSku.Color.Name} no se encontro para actualizar.");
         }
 
         public async Task<SaleDetail> Map(dynamic rowDapper, CancellationToken cancellation = default)
@@ -195,12 +195,10 @@ namespace DK.Repositories.Sales
             detail.IsDeleted = rowDapper.IsDeleted;
             detail.Product = await _productRepository.Get((long)rowDapper.ProductId, cancellation);
             if (detail.Product != null)
-                detail.Variant = await _variantRepository.Get(detail.Product, (long)rowDapper.VariantId, cancellation);
-            if (detail.Variant != null)
-                detail.Color = await _productColorRepository.Get(detail.Variant, (long)rowDapper.ProductColorId, cancellation);
+                detail.ProductSku = await _productSkuRepository.Get(detail.Product, (long)rowDapper.ProductSkuId, cancellation);
             detail.Count = rowDapper.Count;
             detail.Price = rowDapper.Price;
-            detail.IsExtra = rowDapper.IsExtra;
+            detail.IsExchangeItem = rowDapper.IsExchangeItem;
 
             if (rowDapper.StockId != null)
                 detail.Stock = await _stockRepository.Get((long)rowDapper.StockId, cancellation);

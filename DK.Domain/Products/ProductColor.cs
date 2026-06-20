@@ -7,7 +7,6 @@ namespace DK.Domain.Products
     {
         public string Name { get; set; }
         public string Hex { get; set; }
-        public string Sku { get; set; }
         public int SortOrder { get; set; }
         public IEnumerable<Image> Images { get; set; }
 
@@ -21,7 +20,7 @@ namespace DK.Domain.Products
 
         public override string ToString()
         {
-            return $"{Name} {Sku}";
+            return $"{Name}";
         }
     }
 }

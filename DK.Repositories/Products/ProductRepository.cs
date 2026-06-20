@@ -1,4 +1,5 @@
 ﻿using Dakali.Domine;
+using Dakali.Domine.Base;
 using Dakali.Interface.Connection;
 using Dapper;
 using DK.Domain.Products;
@@ -11,31 +12,46 @@ using System.Threading.Tasks;
 
 namespace DK.Repositories.Products
 {
-    public class ProductRepository : IRepository<Product>
+    public class ProductRepository : IRepositoryCode<Product>
     {
         private ISession _session;
-        private ModelRepository _modelRepository;
+        private CategoryRepository _categoryRepository;
+        private FieldRepository _fieldRepository;
         private VariantRepository _variantRepository;
+        private ProductColorRepository _productColorRepository;
+        private ProductSkuRepository _productSkuRepository;
 
-        public ProductRepository(ISession session, ModelRepository modelRepository, VariantRepository variantRepository)
+        public ProductRepository(ISession session, CategoryRepository categoryRepository, FieldRepository fieldRepository, VariantRepository variantRepository, ProductColorRepository productColorRepository, ProductSkuRepository productSkuRepository)
         {
             _session = session;
-            _modelRepository = modelRepository;
             _variantRepository = variantRepository;
+            _productColorRepository = productColorRepository;
+            _productSkuRepository = productSkuRepository;
+            _fieldRepository = fieldRepository;
+            _categoryRepository = categoryRepository;
         }
 
         public async Task<Product> Create(Product entity, CancellationToken cancellation = default)
         {
             var query = @"
-            INSERT INTO dbo.Product (Name, Description, ModelId, SearchString)
+            INSERT INTO dbo.Product (Code, Name, Description, CategoryId, Active, SalePrice, Price, Weight, SearchString)
             OUTPUT INSERTED.*
-            VALUES (@Name, @Description, @ModelId, @SearchString);";
+            VALUES (@Code, @Name, @Description, @CategoryId, @Active, @SalePrice, @Price, @Weight, @SearchString);";
 
             entity.SearchString = entity.ToString();
-            var product = await _session.Connection.QuerySingleAsync<Product>(query, new { entity.Name, entity.Description, ModelId = entity.Model.Id, entity.SearchString }, transaction: _session.Transaction);
+            var rowDapper = await _session.Connection.QuerySingleAsync(
+                new CommandDefinition(query, new { entity.Code, entity.Name, entity.Description, CategoryId = entity.Category.Id, entity.Active, entity.SalePrice, entity.Price, entity.Weight, entity.SearchString }, transaction: _session.Transaction, cancellationToken: cancellation));
+
+            var product = await Map(rowDapper, cancellation);
 
             if (product != null)
-                 await _variantRepository.SyncCollection(product, entity.Variants, cancellation);
+            {
+                await _fieldRepository.SyncCollection(product, entity.Fields, cancellation);
+                IEnumerable<Variant> variants = await _variantRepository.SyncCollection(product, entity.Variants, cancellation);
+                IEnumerable<ProductColor> colors = await _productColorRepository.SyncCollection(product, entity.Colors, cancellation);
+
+                await SyncCollectionSku(product, entity.Skus, colors, variants, cancellation);
+            }
 
             return await Get(product.Id, cancellation);
         }
@@ -50,8 +66,7 @@ namespace DK.Repositories.Products
                        Version = Version + 1
                  WHERE Id = @id AND IsDeleted = 0;";
 
-            await _session.Connection.ExecuteAsync(query, entity, transaction: _session.Transaction);
-            await _variantRepository.Delete(entity, entity.Variants, cancellation);
+            await _session.Connection.ExecuteAsync(new CommandDefinition(query, entity, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async Task<IEnumerable<Product>> GetAll(CancellationToken cancellation = default)
@@ -60,7 +75,7 @@ namespace DK.Repositories.Products
                 select * 
                 from dbo.Product 
                 where IsDeleted = 0";
-            var rows = await _session.Connection.QueryAsync(query, new { }, transaction: _session.Transaction);
+            var rows = await _session.Connection.QueryAsync(new CommandDefinition(query, new { }, transaction: _session.Transaction, cancellationToken: cancellation));
 
             if (rows == null)
                 return Enumerable.Empty<Product>();
@@ -68,7 +83,7 @@ namespace DK.Repositories.Products
             var list = new List<Product>();
 
             foreach (var row in rows)
-                list.Add(await Map(row));
+                list.Add(await Map(row, cancellation));
 
             return list;
         }
@@ -110,7 +125,7 @@ namespace DK.Repositories.Products
             filter.Offset = (productFilter.Page - 1) * productFilter.CountRows;
             filter.PageSize = productFilter.CountRows;
 
-            var results = await _session.Connection.QueryMultipleAsync(query, filter as object, transaction: _session.Transaction);
+            var results = await _session.Connection.QueryMultipleAsync(new CommandDefinition(query, filter as object, transaction: _session.Transaction, cancellationToken: cancellationToken));
             var rowsDapper = results.Read().ToList();
             var count = results.Read<long>().Single();
 
@@ -120,7 +135,7 @@ namespace DK.Repositories.Products
             var sales = new List<Product>();
 
             foreach (var row in rowsDapper)
-                sales.Add(await Map(row));
+                sales.Add(await Map(row, cancellationToken));
 
             return new ResultPage<Product>() { Count = count, Values = sales };
         }
@@ -131,12 +146,40 @@ namespace DK.Repositories.Products
                 select *
                 from dbo.Product 
                 where IsDeleted = 0 AND Id = @Id";
-            var rowProduct = await _session.Connection.QuerySingleOrDefaultAsync<dynamic>(query, new { Id = id }, transaction: _session.Transaction);
+            var rowProduct = await _session.Connection.QuerySingleOrDefaultAsync<dynamic>(new CommandDefinition(query, new { Id = id }, transaction: _session.Transaction, cancellationToken: cancellation));
 
             if (rowProduct == null)
                 return null;
 
-            return await Map(rowProduct);
+            return await Map(rowProduct, cancellation);
+        }
+
+        public async Task<Product> GetLight(long id, CancellationToken cancellation = default)
+        {
+            var query = @"
+                select *
+                from dbo.Product 
+                where IsDeleted = 0 AND Id = @Id";
+            var rowProduct = await _session.Connection.QuerySingleOrDefaultAsync<dynamic>(new CommandDefinition(query, new { Id = id }, transaction: _session.Transaction, cancellationToken: cancellation));
+
+            if (rowProduct == null)
+                return null;
+
+            return await MapLight(rowProduct, cancellation);
+        }
+
+        public async Task<Product> Get(string code, CancellationToken cancellation = default)
+        {
+            var query = @"
+                select *
+                from dbo.Product 
+                where IsDeleted = 0 AND Code = @Code";
+            var rowProduct = await _session.Connection.QuerySingleOrDefaultAsync<dynamic>(new CommandDefinition(query, new { Code = code }, transaction: _session.Transaction, cancellationToken: cancellation));
+
+            if (rowProduct == null)
+                return null;
+
+            return await Map(rowProduct, cancellation);
         }
 
         public async Task<Product> Update(Product entity, CancellationToken cancellation = default)
@@ -146,26 +189,69 @@ namespace DK.Repositories.Products
                 SET 
                     Name = @Name,
                     Description = @Description,
-                    ModelId = @ModelId,
+                    CategoryId = @CategoryId,
+                    Active = @Active,
+                    SalePrice = @SalePrice,
+                    Price = @Price,
+                    Weight = @Weight,
                     SearchString = @SearchString,
                     UpdateDate = SYSUTCDATETIME(),
                     Version = Version + 1
-                OUTPUT INSERTED.*
                 WHERE Id = @Id AND IsDeleted = 0;
             ";
 
             entity.SearchString = entity.ToString();
-            await _session.Connection.QuerySingleAsync<Model>(query, new { entity.Id, entity.Name, entity.Description, ModelId = entity.Model.Id, entity.SearchString }, transaction: _session.Transaction);
-            await _variantRepository.SyncCollection(entity, entity.Variants, cancellation);
+            await _session.Connection.ExecuteAsync(
+                new CommandDefinition(query, new { entity.Id, entity.Name, entity.Description, CategoryId = entity.Category.Id, entity.Active, entity.SalePrice, entity.Price, entity.SearchString }, transaction: _session.Transaction, cancellationToken: cancellation));
 
-            return await Get(entity.Id, cancellation) ?? throw new KeyNotFoundException($"Product {entity.Model.Code}-{entity.Name} no encontrado para actualizar.");
+            await _fieldRepository.SyncCollection(entity, entity.Fields, cancellation);
+            IEnumerable<Variant> variants = await _variantRepository.SyncCollection(entity, entity.Variants, cancellation);
+            IEnumerable<ProductColor> colors = await _productColorRepository.SyncCollection(entity, entity.Colors, cancellation);
+
+            await SyncCollectionSku(entity, entity.Skus, colors, variants, cancellation);
+
+            return await Get(entity.Id, cancellation) ?? throw new KeyNotFoundException($"Product {entity.Code}-{entity.Name} no encontrado para actualizar.");
         }
 
-        public async Task<Product> Map(dynamic rowDapper)
+        public async Task SyncCollectionSku(Product product, IEnumerable<ProductSku> productSkus, IEnumerable<ProductColor> productColors, IEnumerable<Variant> variants, CancellationToken cancellation = default)
         {
+            if (product != null)
+            {
+
+                foreach (var sku in productSkus)
+                {
+                    if (sku.Color.Id <= 0)
+                        sku.Color = productColors.First(c => string.Compare(c.Name, sku.Color.Name, true) == 0);
+                    if (sku.Variant.Id <= 0)
+                        sku.Variant = variants.First(v => string.Compare(v.Name, sku.Variant.Name, true) == 0);
+                }
+                await _productSkuRepository.SyncCollection(product, productSkus, cancellation);
+            }
+        }
+
+        public async Task<Product> Map(dynamic rowDapper, CancellationToken cancellation = default)
+        {
+            if (rowDapper is null)
+                return null;
+
+            var product = await MapLight(rowDapper, cancellation);
+            
+            product.Variants = await _variantRepository.Get(product, cancellation);
+            product.Colors = await _productColorRepository.Get(product, cancellation);
+            product.Skus = await _productSkuRepository.Get(product, cancellation);
+
+            return product;
+        }
+
+        public async Task<Product> MapLight(dynamic rowDapper, CancellationToken cancellation = default)
+        {
+            if (rowDapper is null)
+                return null;
+
             var product = new Product();
 
             product.Id = rowDapper.Id;
+            product.Code = rowDapper.Code;
             product.SearchString = rowDapper.SearchString;
             product.CreationDate = rowDapper.CreationDate;
             product.UpdateDate = rowDapper.UpdateDate;
@@ -175,9 +261,13 @@ namespace DK.Repositories.Products
             product.Version = rowDapper.Version;
             product.Name = rowDapper.Name;
             product.Description = rowDapper.Description;
-            product.Model = await _modelRepository.Get(rowDapper.ModelId);
-            product.Variants = await _variantRepository.Get(product);
-
+            product.Active = rowDapper.Active;
+            product.SalePrice = rowDapper.SalePrice;
+            product.Price = rowDapper.Price;
+            product.Weight = rowDapper.Weight;
+            product.Category = await _categoryRepository.Get(rowDapper.CategoryId, cancellation);
+            product.Fields = await _fieldRepository.Get(product, cancellation);
+            
             return product;
         }
     }

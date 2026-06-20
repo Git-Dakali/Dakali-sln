@@ -1,12 +1,11 @@
 ﻿using DK.WebApi.ViewModel.Base;
+using DK.WebApi.ViewModel.Products;
 
 namespace DK.WebApi.ViewModel
 {
     public class StockRequest: RequestGuid
     {
-        public ProductRequest? Product { get; set; }
-        public VariantRequest? Variant { get; set; }
-        public ProductColorRequest? Color { get; set; }
+        public ProductSkuRequest? ProductSku { get; set; }
         public LocationRequest? Location { get; set; }
         public long Physical { get; set; }
         public long Reserved { get; set; }

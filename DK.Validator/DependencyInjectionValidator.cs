@@ -1,4 +1,6 @@
 ﻿using DK.Validator.GeographicLocation;
+using DK.Validator.Products;
+using DK.Validator.ReturnOrders;
 using DK.Validator.RoadMaps;
 using DK.Validator.Sales;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,7 +12,9 @@ namespace DK.Validator
         public static void Configure(IServiceCollection service)
         {
             service.AddScoped<CategoryValidator>();
-            service.AddScoped<ModelValidator>();
+            service.AddScoped<FieldValidator>();
+            service.AddScoped<ProductSkuValidator>();
+            service.AddScoped<CategoryValidator>();
             service.AddScoped<ProductValidator>();
             service.AddScoped<StockValidator>();
             service.AddScoped<LocationStateValidator>();
@@ -30,6 +34,8 @@ namespace DK.Validator
             service.AddScoped<DriverValidator>();
             service.AddScoped<RoadMapValidator>();
             service.AddScoped<RoadMapSaleValidator>();
+            service.AddScoped<LogisticsProviderValidator>();
+            service.AddScoped<ReturnOrderValidator>();
         }
     }
 }

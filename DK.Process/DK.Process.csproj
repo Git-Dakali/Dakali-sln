@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NPOI" Version="2.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\DK.Domain\DK.Domain.csproj" />
     <ProjectReference Include="..\DK.Repositories\DK.Repositories.csproj" />
     <ProjectReference Include="..\DK.Validator\DK.Validator.csproj" />

@@ -5,6 +5,8 @@ namespace DK.WebApi.ViewModel.Sales
 {
     public class SaleRequest : RequestGuid
     {
+        public bool IsPrinted { get; set; }
+        public bool IsReverseLogistics { get; set; }
         public string Identifier { get; set; }
         public string Dni { get; set; }
         public string Cuit { get; set; }
@@ -30,6 +32,7 @@ namespace DK.WebApi.ViewModel.Sales
         public OriginSaleRequest? OriginSale { get; set; }
         public StoredFileRequest? PdfInvoice { get; set; }
         public CityRequest? City { get; set; }
+        public LogisticsProviderRequest? LogisticsProvider { get; set; }
         public string State { get; set; }
         public IEnumerable<SaleDetailRequest> SaleDetails { get; set; }
     }

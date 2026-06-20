@@ -40,6 +40,19 @@ namespace DK.WebApi.Controllers
             var stock = await _stockProcess.Create(_mapper.Map<Stock>(data));
             return _mapper.Map<StockResponse>(stock);
         }
+        
+        [HttpPost("UpdatePhysical")]
+        public async Task<StockResponse> UpdatePhysical([FromBody] StockRequest data, CancellationToken cancellationToken)
+        {
+            await _stockProcess.UpdatePhysical(_mapper.Map<Stock>(data), cancellationToken);
+            return _mapper.Map<StockResponse>(await _stockProcess.Get(data.Id));
+        }
+
+        [HttpPost("Recount")]
+        public async Task Recount([FromBody] List<StockRequest> data)
+        {
+            await _stockProcess.Recount(_mapper.Map<List<Stock>>(data));
+        }
 
         [HttpPost("StockEntry")]
         public async Task StockEntry([FromBody] StockEntryRequest data)

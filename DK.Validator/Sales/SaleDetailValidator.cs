@@ -19,8 +19,7 @@ namespace DK.Validator.Sales
         public async Task Create(Sale sale, SaleDetail saleDetail, CancellationToken cancellationToken = default)
         {
             await Product(saleDetail, cancellationToken);
-            await Variant(saleDetail, cancellationToken);
-            await Color(saleDetail, cancellationToken);
+            await ProductSku(saleDetail, cancellationToken);
             await Count(saleDetail, cancellationToken);
             await Price(saleDetail, cancellationToken);
             await Location(saleDetail, cancellationToken);
@@ -29,8 +28,7 @@ namespace DK.Validator.Sales
         public async Task Update(Sale sale, SaleDetail saleDetail, CancellationToken cancellationToken = default)
         {
             await Product(saleDetail, cancellationToken);
-            await Variant(saleDetail, cancellationToken);
-            await Color(saleDetail, cancellationToken);
+            await ProductSku(saleDetail, cancellationToken);
             await Count(saleDetail, cancellationToken);
             await Price(saleDetail, cancellationToken);
             await Location(saleDetail, cancellationToken);
@@ -39,7 +37,7 @@ namespace DK.Validator.Sales
         public async Task Delete(Sale sale, SaleDetail saleDetail, CancellationToken cancellationToken = default)
         {
             if (!(await Exist(sale, saleDetail, cancellationToken)))
-                throw new Exception($"No existe el producto {saleDetail.Product.Name}-{saleDetail.Variant.Name}-{saleDetail.Color.Name}");
+                throw new Exception($"No existe el producto {saleDetail.Product.Name}-{saleDetail.ProductSku.Variant.Name}-{saleDetail.ProductSku.Color.Name}");
         }
 
         public async Task AssignStock(Sale parent, SaleDetail saleDetail, Stock stock, CancellationToken cancellation = default)
@@ -76,7 +74,7 @@ namespace DK.Validator.Sales
                 throw new Exception($"El detalle no existe para la venta {parent.Number}.");
 
             if(detailPersisted.Stock is null)
-                throw new Exception($"El detalle {detailPersisted.Product.Name}-{detailPersisted.Variant.Name}-{detailPersisted.Color.Name} no posee stock reservado para desasignar.");
+                throw new Exception($"El detalle {detailPersisted.Product.Name}-{detailPersisted.ProductSku.Variant.Name}-{detailPersisted.ProductSku.Color.Name} no posee stock reservado para desasignar.");
 
             await _saleDetailRepository.UnassignStock(parent, saleDetail, cancellation);
         }
@@ -92,16 +90,14 @@ namespace DK.Validator.Sales
                 throw new Exception("El producto esta vacio.");
         }
 
-        public async Task Variant(SaleDetail saleDetail, CancellationToken cancellationToken = default)
+        public async Task ProductSku(SaleDetail saleDetail, CancellationToken cancellationToken = default)
         {
-            if (saleDetail.Variant is null)
+            if (saleDetail.ProductSku?.Variant is null)
                 throw new Exception("La Variante esta vacio.");
-        }
 
-        public async Task Color(SaleDetail saleDetail, CancellationToken cancellationToken = default)
-        {
-            if (saleDetail.Color is null)
+            if (saleDetail.ProductSku?.Color is null)
                 throw new Exception("El Color esta vacio.");
+
         }
 
         public async Task Count(SaleDetail saleDetail, CancellationToken cancellationToken = default)

@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using DK.Domain.Products;
 using DK.Process.Product;
-using DK.WebApi.ViewModel;
+using DK.WebApi.ViewModel.Products;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DK.WebApi.Controllers

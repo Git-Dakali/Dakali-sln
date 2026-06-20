@@ -17,16 +17,14 @@ namespace DK.Domain.Sales
         EnViaje = 6,
         Rechazado = 7,
         Entregado = 8,
-        PendienteFacturar = 9,
-        Facturado = 10,
-        Devuelto = 11,
-        Almacenado = 12,
-        EntregadoParcial = 13,
-        Cancelado = 14,
+        EntregadoParcial = 9,
+        Cancelado = 10,
     }
 
     public class Sale : EntityGuid
     {
+        public bool IsPrinted { get; set; }
+        public bool IsReverseLogistics { get; set; }
         public string Identifier { get; set; }
         public long Number { get; set; }
         public string ArcaNumber { get; set; }
@@ -52,6 +50,7 @@ namespace DK.Domain.Sales
         public OriginSale OriginSale { get; set; }
         public StoredFile PdfInvoice { get; set; }
         public City City { get; set; }
+        public LogisticsProvider LogisticsProvider { get; set; }
         public SaleState State { get; set; }
         public IEnumerable<SaleDetail> SaleDetails { get; set; }
 

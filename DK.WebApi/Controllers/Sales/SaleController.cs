@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DK.Domain.GeographicLocation;
 using DK.Domain.Sales;
 using DK.Process.Sales;
 using DK.WebApi.ViewModel.Base;
@@ -13,7 +14,6 @@ namespace DK.WebApi.Controllers.Sales
     {
         private readonly IMapper _mapper;
         private SaleProcess _saleProcess;
-        
 
         public SaleController(SaleProcess saleProcess, IMapper mapper)
         {
@@ -63,10 +63,16 @@ namespace DK.WebApi.Controllers.Sales
             return _mapper.Map<SaleResponse>(product);
         }
 
-        [HttpPost("AddLocation")]
-        public async Task AddLocation([FromQuery] long SaleId, [FromQuery] decimal longitude, [FromQuery] decimal latitude, CancellationToken cancellation)
+        [HttpPost("UpdateIsPrinted")]
+        public async Task UpdateIsPrinted([FromQuery] long saleId, [FromQuery] bool isPrinted, CancellationToken cancellation)
         {
-            await _saleProcess.AddLocation(new Sale() { Id = SaleId, Longitude = longitude, Latitude = latitude }, cancellation);
+            await _saleProcess.UpdateIsPrinted(saleId, isPrinted, cancellation);
+        }
+
+        [HttpPost("AddLocation")]
+        public async Task AddLocation([FromBody] SaleLocationRequest request, CancellationToken cancellation)
+        {
+            await _saleProcess.AddLocation(new Sale() { Id = request.SaleId, Longitude = request.Longitude, Latitude = request.Latitude, Address = request.Address, City = _mapper.Map<City>(request.City), Observation = request.Observation }, cancellation);
         }
 
         [HttpPost("Delete")]
@@ -147,40 +153,13 @@ namespace DK.WebApi.Controllers.Sales
             return _mapper.Map<SaleResponse>(saleUpdated);
         }
 
-        [HttpPost("Return")]
-        public async Task<SaleResponse> Return([FromBody] long saleId, CancellationToken cancellation)
+        [HttpGet("ReportExcelDarLogitics")]
+        public async Task<string> ReportExcelDarLogitics([FromQuery(Name = "SaleIds")] string saleIds, CancellationToken cancellation)
         {
-            var sale = await _saleProcess.Get(saleId, cancellation);
-            var saleUpdated = await _saleProcess.Return(sale, cancellation);
+            var ids = saleIds.Split(",").Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => long.Parse(x));
+            var bytes = await _saleProcess.GetReportExcelDarLogitics(ids, cancellation);
 
-            return _mapper.Map<SaleResponse>(saleUpdated);
-        }
-
-        [HttpPost("Stored")]
-        public async Task<SaleResponse> Stored([FromBody] long saleId, CancellationToken cancellation)
-        {
-            var sale = await _saleProcess.Get(saleId, cancellation);
-            var saleUpdated = await _saleProcess.Stored(sale, cancellation);
-
-            return _mapper.Map<SaleResponse>(saleUpdated);
-        }
-
-        [HttpPost("PendingBilling")]
-        public async Task<SaleResponse> PendingBilling([FromBody] long saleId, CancellationToken cancellation)
-        {
-            var sale = await _saleProcess.Get(saleId, cancellation);
-            var saleUpdated = await _saleProcess.PendingBilling(sale, cancellation);
-
-            return _mapper.Map<SaleResponse>(saleUpdated);
-        }
-
-        [HttpPost("Invoiced")]
-        public async Task<SaleResponse> Invoiced([FromBody] long saleId, CancellationToken cancellation)
-        {
-            var sale = await _saleProcess.Get(saleId, cancellation);
-            var saleUpdated = await _saleProcess.Invoiced(sale, cancellation);
-
-            return _mapper.Map<SaleResponse>(saleUpdated);
+            return Convert.ToBase64String(bytes);
         }
     }
 }

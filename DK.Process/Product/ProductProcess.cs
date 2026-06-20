@@ -1,8 +1,7 @@
 ﻿using Dakali.Domine;
 using DK.Domain.Products;
-using DK.Domain.Sales;
 using DK.Repositories.Products;
-using DK.Validator;
+using DK.Validator.Products;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;

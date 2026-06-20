@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DK.Repositories.Sales
 {
-    public class OriginSaleRepository : IRepository<OriginSale>
+    public class OriginSaleRepository : IRepositoryCode<OriginSale>
     {
         private ISession _session;
         public OriginSaleRepository(ISession session)

@@ -1,7 +1,9 @@
 ﻿using Dakali.Domine;
 using Dakali.Interface.Connection;
 using Dapper;
+using DK.Domain.GeographicLocation;
 using DK.Domain.Sales;
+using DK.Domain.Sales.Report;
 using DK.Repositories.GeographicLocation;
 using DK.Repositories.Interface.Base;
 using DK.Repositories.Products;
@@ -21,9 +23,10 @@ namespace DK.Repositories.Sales
         private OriginSaleRepository _originSaleRepository;
         private StoredFileRepository _storedFileRepository;
         private CityRepository _cityRepository;
+        private LogisticsProviderRepository _logisticsProviderRepository;
         private SaleDetailRepository _saleDetailRepository;
 
-        public SaleRepository(ISession session, TaxStatusRepository taxStatusRepository, OriginSaleRepository originSaleRepository, StoredFileRepository storedFileRepository, CityRepository cityRepository, SaleDetailRepository saleDetailRepository)
+        public SaleRepository(ISession session, TaxStatusRepository taxStatusRepository, OriginSaleRepository originSaleRepository, StoredFileRepository storedFileRepository, CityRepository cityRepository, LogisticsProviderRepository logisticsProviderRepository, SaleDetailRepository saleDetailRepository)
         {
             _session = session;
             _taxStatusRepository = taxStatusRepository;
@@ -31,18 +34,25 @@ namespace DK.Repositories.Sales
             _storedFileRepository = storedFileRepository;
             _cityRepository = cityRepository;
             _saleDetailRepository = saleDetailRepository;
+            _logisticsProviderRepository = logisticsProviderRepository;
         }
 
         public async Task<Sale> Create(Sale entity, CancellationToken cancellation = default)
         {
             var query = @"
-            INSERT INTO dbo.Sale (Identifier, ArcaNumber, Dni, Cuit, Date, DeliveryDate, DeliveryStartTime, DeliveryEndTime, BusinessName, Address, Floor, Apartment, Phone, Observation, GrossPrice, Discounts, TotalPrice, ShippingPrice, TaxStatusId, OriginSaleId, PdfInvoiceId, CityId, State, SearchString)
-            OUTPUT INSERTED.*
-            VALUES (@Identifier, @ArcaNumber, @Dni, @Cuit, @Date, @DeliveryDate, @DeliveryStartTime, @DeliveryEndTime, @BusinessName, @Address, @Floor, @Apartment, @Phone, @Observation, @GrossPrice, @Discounts, @TotalPrice, @ShippingPrice, @TaxStatusId, @OriginSaleId, @PdfInvoiceId, @CityId, @State, @SearchString);";
+            INSERT INTO dbo.Sale (IsPrinted, IsReverseLogistics, Identifier, ArcaNumber, Dni, Cuit, Date, DeliveryDate, DeliveryStartTime, DeliveryEndTime, BusinessName, Address, Floor, Apartment, Phone, Observation, GrossPrice, Discounts, TotalPrice, ShippingPrice, TaxStatusId, OriginSaleId, PdfInvoiceId, CityId, LogisticsProviderId, State, SearchString)
+            OUTPUT INSERTED.Id, INSERTED.SearchString, INSERTED.CreationDate, INSERTED.RemoveDate, INSERTED.UpdateDate, INSERTED.Version, INSERTED.Guid, INSERTED.IsDeleted, 
+                INSERTED.IsPrinted, INSERTED.IsReverseLogistics, INSERTED.Identifier, INSERTED.Number, INSERTED.ArcaNumber, INSERTED.Date, INSERTED.DeliveryDate, INSERTED.DeliveryStartTime, 
+                INSERTED.DeliveryEndTime, INSERTED.BusinessName, INSERTED.Dni, INSERTED.Cuit, INSERTED.Address, INSERTED.Floor, INSERTED.Apartment, INSERTED.Phone, INSERTED.Observation, 
+                INSERTED.GrossPrice, INSERTED.ShippingPrice, INSERTED.Discounts, INSERTED.TotalPrice, INSERTED.TaxStatusId, INSERTED.OriginSaleId, INSERTED.PdfInvoiceId, INSERTED.CityId, INSERTED.LogisticsProviderId,
+                INSERTED.State, INSERTED.Latitude, INSERTED.Longitude
+            VALUES (@IsPrinted, @IsReverseLogistics, @Identifier, @ArcaNumber, @Dni, @Cuit, @Date, @DeliveryDate, @DeliveryStartTime, @DeliveryEndTime, @BusinessName, @Address, @Floor, @Apartment, @Phone, @Observation, @GrossPrice, @Discounts, @TotalPrice, @ShippingPrice, @TaxStatusId, @OriginSaleId, @PdfInvoiceId, @CityId, @LogisticsProviderId, @State, @SearchString);";
             entity.State = SaleState.Creado;
             entity.SearchString = entity.ToString();
             var rowDapper = await _session.Connection.QuerySingleAsync(new CommandDefinition(query, 
                 new {
+                    entity.IsPrinted,
+                    entity.IsReverseLogistics,
                     Identifier = entity.Identifier ?? string.Empty, 
                     ArcaNumber = entity.ArcaNumber ?? string.Empty,
                     Dni = entity.Dni ?? string.Empty,
@@ -65,6 +75,7 @@ namespace DK.Repositories.Sales
                     OriginSaleId = entity.OriginSale?.Id,
                     PdfInvoiceId = entity.PdfInvoice?.Id,
                     CityId = entity.City?.Id,
+                    LogisticsProviderId = entity.LogisticsProvider?.Id,
                     State = SaleState.Creado.ToString(),
                     SearchString = entity.SearchString ?? string.Empty 
                 }, transaction: _session.Transaction, cancellationToken: cancellation));
@@ -115,6 +126,25 @@ namespace DK.Repositories.Sales
             return await Get(id, false, cancellation);
         }
 
+        public async Task<IEnumerable<ExcelDarLogitics>> GetReportExcelDarLogitics(IEnumerable<long> ids, CancellationToken cancellation = default)
+        {
+            var query = $@"
+                SELECT s.Id, s.Identifier as Tracking, CASE WHEN s.IsReverseLogistics = 1 THEN 'CAMBIO!!! ENTREGAR UN PAQUETE Y RECIBIR UN PAQUETE' ELSE '' END LogisticaInversa, FORMAT(s.DeliveryDate, 'dd/MM/yyyy') as FechaEntrega, s.BusinessName as Destinatario, s.Phone as Telefono, s.Address as Direccion, c.Name as Localidad, c.ZipCode as CodigoPostal, s.Observation as Observacion, s.TotalPrice as PrecioTotal, x.ValorDeclarado, x.Peso
+                FROM Sale s
+                LEFT JOIN City c on c.Id = s.CityId
+                CROSS APPLY (
+                    SELECT 
+                        SUM(p.Price) AS ValorDeclarado,
+                        SUM(p.Weight) AS Peso
+                    FROM SaleDetail sd
+                    INNER JOIN Product p ON p.Id = sd.ProductId
+                    WHERE sd.SaleId = s.Id
+                ) x
+                WHERE s.Id in @Ids";
+
+            return await _session.Connection.QueryAsync<ExcelDarLogitics>(new CommandDefinition(query, new { Ids = ids}, transaction: _session.Transaction, cancellationToken: cancellation));
+        }
+
         public async Task<Sale> GetByNumber(long number, CancellationToken cancellation = default)
         {
             var query = @"
@@ -155,26 +185,69 @@ namespace DK.Repositories.Sales
 
             var query = @" select * from dbo.Sale where IsDeleted = 0";
             var queryCount = @" select COUNT(*) from dbo.Sale where IsDeleted = 0";
+            var filterQuery = $"";
 
             dynamic filter = new ExpandoObject();
 
             if (saleFilter.Id != null)
             {
-                query += " AND Id = @Id";
-                queryCount += " AND Id = @Id";
-
+                filterQuery += " AND Id = @Id";
                 filter.Id = saleFilter.Id;
             }
 
             if (!string.IsNullOrWhiteSpace(saleFilter.SearchString))
             {
-                query += " AND CONTAINS(SearchString, @SearchString)";
-                queryCount += " AND CONTAINS(SearchString, @SearchString)";
-
+                filterQuery += " AND CONTAINS(SearchString, @SearchString)";
+                
                 var values = (saleFilter.SearchString ?? string.Empty).Split(" ").Select(value => value.Trim()).Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => $"\"{value}*\"");
 
                 filter.SearchString = $"({string.Join(" AND ", values)})";
             }
+
+            if ((saleFilter.OriginSaleId ??0) > 0)
+            {
+                filterQuery += " AND OriginSaleId = @OriginSaleId";
+                filter.OriginSaleId = saleFilter.OriginSaleId;
+            }
+
+            if ((saleFilter.LogisticsProviderId ?? 0) > 0)
+            {
+                filterQuery += " AND LogisticsProviderId = @LogisticsProviderId";
+                filter.LogisticsProviderId = saleFilter.LogisticsProviderId;
+            }
+
+            if ((saleFilter.Number ?? 0) > 0)
+            {
+                filterQuery += " AND Number = @Number";
+                filter.Number = saleFilter.Number;
+            }
+
+            if (!string.IsNullOrWhiteSpace(saleFilter.Identifier))
+            {
+                filterQuery += " AND Identifier = @Identifier";
+                filter.Identifier = saleFilter.Identifier;
+            }
+
+            if (saleFilter.DeliveryDateFrom != null && saleFilter.DeliveryDateFrom > new DateTime(2000, 1, 1))
+            {
+                filterQuery += " AND DeliveryDate >= @DeliveryDateFrom";
+                filter.DeliveryDateFrom = saleFilter.DeliveryDateFrom?.ToString("yyyy-MM-dd");
+            }
+
+            if (saleFilter.DeliveryDateTo != null && saleFilter.DeliveryDateTo > new DateTime(2000, 1, 1))
+            {
+                filterQuery += " AND DeliveryDate <= @DeliveryDateTo";
+                filter.DeliveryDateTo = saleFilter.DeliveryDateTo?.ToString("yyyy-MM-dd");
+            }
+
+            if (saleFilter.States.Any())
+            {
+                filterQuery += " AND State in @States";
+                filter.States = saleFilter.States.Select(x=> x.ToString());
+            }
+
+            query += $" {filterQuery}";
+            queryCount += $" {filterQuery}";
 
             query += @$"
                 ORDER BY Id
@@ -207,6 +280,8 @@ namespace DK.Repositories.Sales
             var query = @"
                 UPDATE dbo.Sale
                 SET 
+                    IsPrinted = @IsPrinted, 
+                    IsReverseLogistics = @IsReverseLogistics, 
                     Identifier = @Identifier, 
                     ArcaNumber = @ArcaNumber,
                     Dni = @Dni, 
@@ -229,6 +304,7 @@ namespace DK.Repositories.Sales
                     OriginSaleId = @OriginSaleId, 
                     PdfInvoiceId = @PdfInvoiceId, 
                     CityId = @CityId, 
+                    LogisticsProviderId = @LogisticsProviderId,
                     SearchString = @SearchString,
                     UpdateDate = SYSUTCDATETIME(),
                     Version = Version + 1
@@ -241,6 +317,8 @@ namespace DK.Repositories.Sales
                 new
                 {
                     entity.Id,
+                    entity.IsPrinted,
+                    entity.IsReverseLogistics,
                     Identifier = entity.Identifier ?? string.Empty,
                     ArcaNumber = entity.ArcaNumber ?? string.Empty,
                     Dni = entity.Dni ?? string.Empty,
@@ -263,6 +341,7 @@ namespace DK.Repositories.Sales
                     OriginSaleId = entity.OriginSale?.Id,
                     PdfInvoiceId = entity.PdfInvoice?.Id,
                     CityId = entity.City?.Id,
+                    LogisticsProviderId = entity.LogisticsProvider?.Id,
                     SearchString = entity.SearchString ?? string.Empty,
                 }, transaction: _session.Transaction, cancellationToken: cancellation));
             await _saleDetailRepository.SyncCollection(entity, entity.SaleDetails, cancellation);
@@ -290,11 +369,27 @@ namespace DK.Repositories.Sales
                 SET 
                     Latitude = @Latitude, 
                     Longitude = @Longitude, 
+                    Address = @Address,
+                    Observation = @Observation,
+                    CityId = @CityId, 
                     UpdateDate = SYSUTCDATETIME(),
                     Version = Version + 1
                 WHERE Id = @Id AND IsDeleted = 0;
             ";
-            await _session.Connection.ExecuteAsync(new CommandDefinition(query, new { entity.Id, entity.Longitude, entity.Latitude }, transaction: _session.Transaction, cancellationToken: cancellation));
+            await _session.Connection.ExecuteAsync(new CommandDefinition(query, new { entity.Id, entity.Longitude, entity.Latitude, entity.Address, entity.Observation, CityId = entity.City.Id }, transaction: _session.Transaction, cancellationToken: cancellation));
+        }
+
+        public async Task UpdateIsPrinted(long saleId, bool isPrinted, CancellationToken cancellation = default)
+        {
+            var query = @"
+                UPDATE dbo.Sale
+                SET 
+                    IsPrinted = @IsPrinted,
+                    UpdateDate = SYSUTCDATETIME(),
+                    Version = Version + 1
+                WHERE Id = @Id AND IsDeleted = 0;
+            ";
+            await _session.Connection.ExecuteAsync(new CommandDefinition(query, new { Id = saleId, IsPrinted = isPrinted }, transaction: _session.Transaction, cancellationToken: cancellation));
         }
 
         public async Task<Sale> Map(dynamic rowDapper, CancellationToken cancellation = default)
@@ -308,6 +403,8 @@ namespace DK.Repositories.Sales
             sale.Version = rowDapper.Version;
             sale.Guid = rowDapper.Guid;
             sale.IsDeleted = rowDapper.IsDeleted;
+            sale.IsPrinted = rowDapper.IsPrinted;
+            sale.IsReverseLogistics = rowDapper.IsReverseLogistics;
             sale.Identifier = rowDapper.Identifier;
             sale.Number = rowDapper.Number;
             sale.ArcaNumber = rowDapper.ArcaNumber;
@@ -329,15 +426,13 @@ namespace DK.Repositories.Sales
             sale.Discounts = rowDapper.Discounts;
             sale.TotalPrice = rowDapper.TotalPrice;
             sale.ShippingPrice = rowDapper.ShippingPrice;
-            sale.OriginSale = await _originSaleRepository.Get((long)rowDapper.OriginSaleId, cancellation);
-            sale.City = await _cityRepository.Get((long)rowDapper.CityId, cancellation);
+            sale.OriginSale = await _originSaleRepository.Get((long)(rowDapper.OriginSaleId ?? 0), cancellation);
+            sale.LogisticsProvider = await _logisticsProviderRepository.Get((long) (rowDapper.LogisticsProviderId ?? 0), cancellation);
+            sale.City = await _cityRepository.Get((long)(rowDapper.CityId ?? 0), cancellation);
             sale.State = Enum.Parse<SaleState>(rowDapper.State);
             sale.SaleDetails = await _saleDetailRepository.Get(sale, cancellation);
-
-            if (rowDapper.TaxStatusId != null)
-                sale.TaxStatus = await _taxStatusRepository.Get((long)rowDapper.TaxStatusId, cancellation);
-            if (rowDapper.PdfInvoiceId != null)
-                sale.PdfInvoice = await _storedFileRepository.Get((long)rowDapper.PdfInvoiceId, cancellation);
+            sale.TaxStatus = await _taxStatusRepository.Get((long)(rowDapper.TaxStatusId ?? 0), cancellation);
+            sale.PdfInvoice = await _storedFileRepository.Get((long)(rowDapper.PdfInvoiceId ?? 0), cancellation);
 
             return sale;
         }

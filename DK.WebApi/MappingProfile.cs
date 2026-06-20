@@ -3,6 +3,7 @@ using Dakali.Domine;
 using DK.Domain.GeographicLocation;
 using DK.Domain.Locations;
 using DK.Domain.Products;
+using DK.Domain.ReturnOrders;
 using DK.Domain.RoadMaps;
 using DK.Domain.Sales;
 using DK.WebApi.ViewModel;
@@ -10,6 +11,8 @@ using DK.WebApi.ViewModel.Base;
 using DK.WebApi.ViewModel.GeographicLocation.Cities;
 using DK.WebApi.ViewModel.GeographicLocation.Countries;
 using DK.WebApi.ViewModel.GeographicLocation.Provinces;
+using DK.WebApi.ViewModel.Products;
+using DK.WebApi.ViewModel.ReturnOrders;
 using DK.WebApi.ViewModel.RoadMaps;
 using DK.WebApi.ViewModel.Sales;
 
@@ -19,22 +22,16 @@ namespace DK.WebApi
     {
         public MappingProfile() 
         {
-            CreateMap<PropertyGroupRequest, PropertyGroup>();
-            CreateMap<PropertyGroup, PropertyGroupResponse>();
-            CreateMap<PropertyRequest, Property>();
-            CreateMap<Property, PropertyResponse>();
             CreateMap<CategoryRequest, Category>();
             CreateMap<Category, CategoryResponse>();
             CreateMap<ProductColorRequest, ProductColor>();
             CreateMap<ProductColor, ProductColorResponse>();
-            CreateMap<FieldGroupRequest, FieldGroup>();
-            CreateMap<FieldGroup, FieldGroupResponse>();
             CreateMap<FieldRequest, Field>();
             CreateMap<Field, FieldResponse>();
+            CreateMap<ProductSkuRequest, ProductSku>();
+            CreateMap<ProductSku, ProductSkuResponse>();
             CreateMap<ImageRequest, Image>();
             CreateMap<Image, ImageResponse>();
-            CreateMap<ModelRequest, Model>();
-            CreateMap<Model, ModelResponse>();
             CreateMap<ProductRequest, Product>();
             CreateMap<Product, ProductResponse>();
             CreateMap<StoredFileRequest, StoredFile>();
@@ -61,6 +58,8 @@ namespace DK.WebApi
             CreateMap<City, CityResponse>();
             CreateMap<OriginSaleRequest, OriginSale>();
             CreateMap<OriginSale, OriginSaleResponse>();
+            CreateMap<LogisticsProviderRequest, LogisticsProvider>();
+            CreateMap<LogisticsProvider, LogisticsProviderResponse>();
             CreateMap<SaleDetailRequest, SaleDetail>();
             CreateMap<SaleDetail, SaleDetailResponse>();
             CreateMap<SaleRequest, Sale>();
@@ -77,7 +76,10 @@ namespace DK.WebApi
             CreateMap<ResultPage<Sale>, ResultPageResponse<SaleResponse>>();
             CreateMap<ResultPage<RoadMap>, ResultPageResponse<RoadMapResponse>>();
             CreateMap<ResultPage<Product>, ResultPageResponse<ProductResponse>>();
+            CreateMap<ResultPage<ReturnOrder>, ResultPageResponse<ReturnOrderResponse>>();
             CreateMap<HistoricSale, HistoricSaleResponse>();
+            CreateMap<ReturnOrderRequest, ReturnOrder>();
+            CreateMap<ReturnOrder, ReturnOrderResponse>();
         }
     }
 }

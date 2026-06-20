@@ -10,11 +10,10 @@ using DK.Process.Locations;
 using DK.Process.Product;
 using DK.Process.RoadMaps;
 using DK.Process.Sales;
-using DK.Repositories.GeographicLocation;
 using DK.Repositories.Locations;
-using DK.Repositories.Products;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using Location = DK.Domain.Locations.Location;
 
 
 namespace ICR.DatabaseMigrations.Deployments._1_0_0
@@ -43,9 +42,9 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
         public async override Task BasicRun()
         {
             await CreateOriginSale();
+            await CreateLogisticsProvider();
             await CreateCategory();
             await CreateCity();
-            await CreateModel();
             await CreateLocationState();
             await CreateHallway();
             await CreateColumn();
@@ -72,36 +71,7 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
 
         }
 
-        public async Task CreateModel()
-        {
-            var process = _serviceProvider.GetService<ModelProcess>();
-            var categoryRepository = _serviceProvider.GetService<CategoryRepository>();
-
-            var medidas = new FieldGroup()
-            {
-                Name = "Medidas",
-                Fields = new List<Field>() { new Field() { Name="Alto"}, new Field() { Name = "Ancho" }, new Field() { Name = "Largo" } }
-            };
-
-            var model1800 = new Model()
-            {
-                Code = "1800",
-                Category = await categoryRepository.Get("ZAP1"),
-                VariantNames = new List<string>() { "45", "44", "43", "42", "41", "40", "39", "38" },
-                FieldGroups = new List<FieldGroup>() { medidas }
-            };
-
-            var model4000 = new Model()
-            {
-                Code = "4000",
-                Category = await categoryRepository.Get("ZAP1"),
-                VariantNames = new List<string>() { "45", "44", "43", "42", "41", "40", "39", "38" },
-                FieldGroups = new List<FieldGroup>() { medidas }
-            };
-
-            await process.Create(model1800);
-            await process.Create(model4000);
-        }
+        
 
         public async Task CreateLocationState()
         {
@@ -315,12 +285,17 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
         public async Task CreateProduct()
         {
             var process = _serviceProvider.GetService<ProductProcess>();
-            var modelRepository = _serviceProvider.GetService<ModelRepository>();
+            var categoryProcess = _serviceProvider.GetService<CategoryProcess>();
 
             var product1800 = new Product();
             product1800.Name = "Zapatos de Vestir";
             product1800.Description = "Descripcion Zapatos de Vestir";
-            product1800.Model = await modelRepository.Get("1800");
+            product1800.Code = "1800";
+            product1800.Active = true;
+            product1800.Price = 17000;
+            product1800.SalePrice = 40000;
+            product1800.Weight = 1000;
+            product1800.Category = await categoryProcess.Get("ZAP1");
 
             ConfigureProduct(product1800);
             var newProduct1800 = await process.Create(product1800);
@@ -329,7 +304,12 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
             var product4000 = new Product();
             product4000.Name = "Mocasines Cuero";
             product4000.Description = "Descripcion Mocasines Cuero";
-            product4000.Model = await modelRepository.Get("4000");
+            product4000.Code = "4000";
+            product4000.Active = true;
+            product4000.Price = 20000;
+            product4000.SalePrice = 60000;
+            product4000.Weight = 1000;
+            product4000.Category = await categoryProcess.Get("ZAP1");
 
             ConfigureProduct(product4000);
             var newProduct4000 = await process.Create(product4000);
@@ -454,6 +434,23 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
             await process.Create(originSale3);
         }
 
+        public async Task CreateLogisticsProvider()
+        {
+            var process = _serviceProvider.GetService<LogisticsProviderProcess>();
+
+            var logisticsProvider1 = new LogisticsProvider();
+            logisticsProvider1.Code = "DAR";
+            logisticsProvider1.Name = "DAR Logistica";
+
+            var logisticsProvider2 = new LogisticsProvider();
+            logisticsProvider2.Code = "DAV";
+            logisticsProvider2.Name = "David";
+            logisticsProvider2.IsInHouse = true;
+
+            await process.Create(logisticsProvider1);
+            await process.Create(logisticsProvider2);
+        }
+
         public async Task CreateStock(Product product)
         {
             var locationProcess = _serviceProvider.GetService<LocationProcess>();
@@ -461,19 +458,14 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
             
             var location = await locationProcess.Get("PAS1", "COL1", "NIV1");
 
-            foreach (var variant in product.Variants)
+            foreach (var productSku in product.Skus)
             {
-                foreach (var color in variant.ColorsHex)
-                {
-                    var stock = new Stock();
-                    stock.Location = location;
-                    stock.Product = product;
-                    stock.Variant = variant;
-                    stock.Color = color;
+                var stock = new Stock();
+                stock.Location = location;
+                stock.ProductSku = productSku;
 
-                    var newStock = await stockProcess.Create(stock);
-                    await stockProcess.StockEntry(newStock, 100);
-                }
+                var newStock = await stockProcess.Create(stock);
+                await stockProcess.StockEntry(newStock, 100);
             }
         }
 
@@ -481,39 +473,41 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
         {
             var saleProcess = _serviceProvider.GetService<SaleProcess>();
             var cityProcess = _serviceProvider.GetService<CityProcess>();
+            var logisticsProviderProcess = _serviceProvider.GetService<LogisticsProviderProcess>();
             var originSaleProcess = _serviceProvider.GetService<OriginSaleProcess>();
 
             var city = await cityProcess.Get("1842");
             var originSale = await originSaleProcess.Get("DKL");
-            var variant = product.Variants.First();
-            var color = variant.ColorsHex.First();
+            var logisticsProvider = await logisticsProviderProcess.Get("DAR");
+            var productSku = product.Skus.First();
             var total = 30;
             var count = 1;
 
 
-            await CreateSale(saleProcess, 1, "Urdininea 4783", originSale, await cityProcess.Get("1757"), product, variant, color);
-            await CreateSale(saleProcess, 2, "Echeverria 7086", originSale, await cityProcess.Get("1757"), product, variant, color);
-            await CreateSale(saleProcess, 3, "Luis Galvani 184", originSale, await cityProcess.Get("1755"), product, variant, color);
-            await CreateSale(saleProcess, 4, "Egipto 895", originSale, await cityProcess.Get("1722"), product, variant, color);
-            await CreateSale(saleProcess, 5, "Ayacucho 1714", originSale, await cityProcess.Get("1722"), product, variant, color);
-            await CreateSale(saleProcess, 6, "Emilio Caraffa 1427", originSale, await cityProcess.Get("1722"), product, variant, color);
-            await CreateSale(saleProcess, 7, "Ricardo Guiraldes 222", originSale, await cityProcess.Get("1722"), product, variant, color);
-            await CreateSale(saleProcess, 8, "Anchoris 2895", originSale, await cityProcess.Get("1722"), product, variant, color);
-            await CreateSale(saleProcess, 9, "Glew 2237", originSale, await cityProcess.Get("1744"), product, variant, color);
-            await CreateSale(saleProcess, 10, "Del Prado 2836", originSale, await cityProcess.Get("1661"), product, variant, color);
-            await CreateSale(saleProcess, 11, "Florencio Sanchez 2978", originSale, await cityProcess.Get("1663"), product, variant, color);
-            await CreateSale(saleProcess, 12, "Gelly Obes 4740", originSale, await cityProcess.Get("1665"), product, variant, color);
-            await CreateSale(saleProcess, 13, "Florencio Ballesteros 1238", originSale, await cityProcess.Get("1665"), product, variant, color);
-            await CreateSale(saleProcess, 14, "Matheu 1095", originSale, await cityProcess.Get("1665"), product, variant, color);
-            await CreateSale(saleProcess, 15, "Santiago de Chile 1771", originSale, await cityProcess.Get("1613"), product, variant, color);
-            await CreateSale(saleProcess, 16, "Echeverria 823", originSale, await cityProcess.Get("1623"), product, variant, color);
-            await CreateSale(saleProcess, 17, "Charrua 3629", originSale, await cityProcess.Get("1754"), product, variant, color);
+            await CreateSale(saleProcess, 1, "Urdininea 4783", originSale, logisticsProvider, await cityProcess.Get("1757"), product, productSku);
+            await CreateSale(saleProcess, 2, "Echeverria 7086", originSale, logisticsProvider, await cityProcess.Get("1757"), product, productSku);
+            await CreateSale(saleProcess, 3, "Luis Galvani 184", originSale, logisticsProvider, await cityProcess.Get("1755"), product, productSku);
+            await CreateSale(saleProcess, 4, "Egipto 895", originSale, logisticsProvider, await cityProcess.Get("1722"), product, productSku);
+            await CreateSale(saleProcess, 5, "Ayacucho 1714", originSale, logisticsProvider, await cityProcess.Get("1722"), product, productSku);
+            await CreateSale(saleProcess, 6, "Emilio Caraffa 1427", originSale, logisticsProvider, await cityProcess.Get("1722"), product, productSku);
+            await CreateSale(saleProcess, 7, "Ricardo Guiraldes 222", originSale, logisticsProvider, await cityProcess.Get("1722"), product, productSku);
+            await CreateSale(saleProcess, 8, "Anchoris 2895", originSale, logisticsProvider, await cityProcess.Get("1722"), product, productSku);
+            await CreateSale(saleProcess, 9, "Glew 2237", originSale, logisticsProvider, await cityProcess.Get("1744"), product, productSku);
+            await CreateSale(saleProcess, 10, "Del Prado 2836", originSale, logisticsProvider, await cityProcess.Get("1661"), product, productSku);
+            await CreateSale(saleProcess, 11, "Florencio Sanchez 2978", originSale, logisticsProvider, await cityProcess.Get("1663"), product, productSku);
+            await CreateSale(saleProcess, 12, "Gelly Obes 4740", originSale, logisticsProvider, await cityProcess.Get("1665"), product, productSku);
+            await CreateSale(saleProcess, 13, "Florencio Ballesteros 1238", originSale, logisticsProvider, await cityProcess.Get("1665"), product, productSku);
+            await CreateSale(saleProcess, 14, "Matheu 1095", originSale, logisticsProvider, await cityProcess.Get("1665"), product, productSku);
+            await CreateSale(saleProcess, 15, "Santiago de Chile 1771", originSale, logisticsProvider, await cityProcess.Get("1613"), product, productSku);
+            await CreateSale(saleProcess, 16, "Echeverria 823", originSale, logisticsProvider, await cityProcess.Get("1623"), product, productSku);
+            await CreateSale(saleProcess, 17, "Charrua 3629", originSale, logisticsProvider, await cityProcess.Get("1754"), product, productSku);
         }
 
-        public async Task CreateSale(SaleProcess saleProcess, int index, string address, OriginSale originSale, City city, Product product, Variant variant, ProductColor color)
+        public async Task CreateSale(SaleProcess saleProcess, int index, string address, OriginSale originSale, LogisticsProvider logisticsProvider, City city, Product product, ProductSku productSku)
         {
             var sale = new Sale();
             sale.OriginSale = originSale;
+            sale.LogisticsProvider = logisticsProvider;
             sale.Date = DateTime.Now.Date;
             sale.DeliveryDate = DateTime.Now.Date;
             sale.DeliveryStartTime = new TimeSpan(9, 0, 0);
@@ -522,53 +516,41 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
             sale.City = city;
             sale.Address = address;
             sale.Phone = "+5491127195268";
-            sale.GrossPrice = variant.Price;
+            sale.GrossPrice = product.SalePrice;
             sale.ShippingPrice = 6000;
-            sale.TotalPrice = variant.Price;
-            sale.SaleDetails = new List<SaleDetail>() { new SaleDetail { Id = 0, Product = product, Variant = variant, Color = color, Count = 1, Price = variant.SalePrice, IsExtra = false } };
+            sale.TotalPrice = product.SalePrice;
+            sale.SaleDetails = new List<SaleDetail>() { new SaleDetail { Id = 0, Product = product, ProductSku = productSku, Count = 1, Price = product.SalePrice, IsExchangeItem = false } };
 
             await saleProcess.Create(sale);
         }
 
         public void ConfigureProduct(Product product)
         {
+            var variantNames = new string[] { "38", "39", "40", "41", "42", "43", "44", "45" };
             var variants = new List<Variant>();
-            
-            foreach (var name in product.Model.VariantNames)
-            {
-                var variant = new Variant();
-                variant.Name = name;
-                variant.SalePrice = 38000;
-                variant.Price = 15000;
-                variant.Active = true;
 
-                var colors = new List<ProductColor>() {
-                    new ProductColor() { Name = "Suela", Hex = "#ffffff", Sku = $"{product.Model.Code}{name.Trim()}Suela" },
-                    new ProductColor() { Name = "Azul", Hex = "#ffffff", Sku = $"{product.Model.Code}{name.Trim()}Azul"},
-                    new ProductColor() { Name = "Negro", Hex = "#ffffff", Sku = $"{product.Model.Code}{name.Trim()}Negro"}
+            foreach (var name in variantNames)
+                variants.Add(new Variant() { Name= name});
+
+            var colors = new List<ProductColor>() {
+                    new ProductColor() { Name = "Suela", Hex = "#ffffff" },
+                    new ProductColor() { Name = "Azul", Hex = "#ffffff" },
+                    new ProductColor() { Name = "Negro", Hex = "#ffffff"}
                 };
 
-                variant.ColorsHex = colors;
-
-                var propertyGroups = new List<PropertyGroup>();
-                foreach (var fieldGroup in product.Model.FieldGroups)
-                {
-                    var propertyGroup = new PropertyGroup();
-                    var properties = new List<Property>();
-
-                    foreach (var field in fieldGroup.Fields)
-                        properties.Add(new Property() { Field = field.Name, Value = string.Empty });
-
-                    propertyGroup.Properties = properties;
-                    propertyGroup.Name = fieldGroup.Name;
-                    propertyGroups.Add(propertyGroup);
-                }
-
-                variant.PropertyGroups = propertyGroups;
-                variants.Add(variant);
-            }
 
             product.Variants = variants;
+            product.Colors = colors;
+
+            var skus = new List<ProductSku>();
+            foreach (var variant in product.Variants)
+            {
+                foreach (var color in product.Colors)
+                {
+                    skus.Add(new ProductSku() { Product = product, Variant = variant, Color = color, Sku = $"{product.Code}{variant.Name}{color.Name}" });
+                }
+            }
+            product.Skus = skus;
         }
 
         public void GetProductSQL()
@@ -605,45 +587,29 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
             ");
 
             SQLs.Add(@"
-                CREATE TABLE dbo.Model (
-                  Id            BIGINT IDENTITY(1,1) CONSTRAINT PK_Model PRIMARY KEY,
+                CREATE TABLE dbo.Product (
+                  Id            BIGINT IDENTITY(1,1) CONSTRAINT PK_Product PRIMARY KEY,
                   SearchString  NVARCHAR(MAX) NOT NULL,
-                  Code          NVARCHAR(64) NOT NULL,
+                  Code          NVARCHAR(64)  NOT NULL,
                   CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
                   RemoveDate    DATETIME2 NULL,
                   UpdateDate    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
                   Version       BIGINT    NOT NULL DEFAULT 1,
                   Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+                  CategoryId BIGINT NOT NULL
+                      CONSTRAINT FK_Product_Category
+                      REFERENCES dbo.Category(Id),
                   IsDeleted     BIT NOT NULL DEFAULT 0,
-                  CategoryId    BIGINT NOT NULL CONSTRAINT FK_Model_Category REFERENCES dbo.Category(Id)
+                  [Name]        NVARCHAR(200) NOT NULL,
+                  [Description] NVARCHAR(MAX) NULL,
+                  [Active] BIT NOT NULL,
+                  SalePrice     DECIMAL(18,2) NOT NULL DEFAULT 0,
+                  Price         DECIMAL(18,2) NOT NULL DEFAULT 0,
+                  Weight        DECIMAL(18,2) NOT NULL DEFAULT 0,
                 );
-            ");
 
-            SQLs.Add(@"
-                CREATE TABLE dbo.FieldGroup (
-                    Id           BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_FieldGroup PRIMARY KEY,
-                    SearchString  NVARCHAR(MAX) NOT NULL,
-                    CreationDate DATETIME2(3) NOT NULL CONSTRAINT DF_FieldGroup_CreationDate DEFAULT (SYSUTCDATETIME()),
-                    UpdateDate   DATETIME2(3) NULL,
-                    RemoveDate   DATETIME2(3) NULL,
-                    [Version]    INT NOT NULL CONSTRAINT DF_FieldGroup_Version DEFAULT (1),
-                    [Guid]       UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_FieldGroup_Guid DEFAULT (NEWID()),
-                    IsDeleted    BIT NOT NULL CONSTRAINT DF_FieldGroup_IsDeleted DEFAULT (0),
-                    ModelId BIGINT NOT NULL,
-                    [Name]       NVARCHAR(150) NOT NULL,
-                    SortOrder    INT NOT NULL,
-
-                    CONSTRAINT FK_FieldGroup_Model
-                        FOREIGN KEY (ModelId) REFERENCES dbo.Model(Id)
-                );
-            ");
-            SQLs.Add(@"
-                CREATE INDEX IX_FieldGroup_ModelId ON dbo.FieldGroup(ModelId);
-                
-                CREATE UNIQUE INDEX UX_FieldGroup_Model_Name
-                ON dbo.FieldGroup(ModelId, [Name])
-                WHERE IsDeleted = 0;
-                
+                CREATE INDEX IX_Product_CategoryId  ON dbo.Product(CategoryId);
+                CREATE INDEX IX_Product_IsDeleted   ON dbo.Product(IsDeleted);
             ");
 
             SQLs.Add(@"
@@ -656,42 +622,16 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   Version       BIGINT    NOT NULL DEFAULT 1,
                   Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
                   IsDeleted     BIT NOT NULL DEFAULT 0,
-                  FieldGroupId BIGINT NOT NULL
-                      CONSTRAINT FK_Field_FieldGroup
-                      REFERENCES dbo.FieldGroup(Id),
+                  ProductId BIGINT NOT NULL
+                      CONSTRAINT FK_Field_Product
+                      REFERENCES dbo.Product(Id),
                   [Name]              NVARCHAR(150) NOT NULL,
-                  SortOrder           INT NOT NULL,
-                  CONSTRAINT UX_Field UNIQUE(FieldGroupId, [Name])
+                  [Value]             NVARCHAR(MAX) NOT NULL,
+                  SortOrder           INT NOT NULL
                 );
 
             ");
-            SQLs.Add(@"
-                CREATE TABLE dbo.Model_VariantName (
-                  Id             BIGINT IDENTITY(1,1) CONSTRAINT PK_Model_VariantName PRIMARY KEY,
-                  ModelId BIGINT NOT NULL CONSTRAINT FK_VariantName_Model REFERENCES dbo.Model(Id),
-                  [Name]         NVARCHAR(100) NOT NULL
-                );
-            ");
-            SQLs.Add(@"
-                CREATE TABLE dbo.Product (
-                  Id            BIGINT IDENTITY(1,1) CONSTRAINT PK_Product PRIMARY KEY,
-                  SearchString  NVARCHAR(MAX) NOT NULL,
-                  CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-                  RemoveDate    DATETIME2 NULL,
-                  UpdateDate    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-                  Version       BIGINT    NOT NULL DEFAULT 1,
-                  Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
-                  ModelId BIGINT NOT NULL
-                      CONSTRAINT FK_Product_Model
-                      REFERENCES dbo.Model(Id),
-                  IsDeleted     BIT NOT NULL DEFAULT 0,
-                  [Name]        NVARCHAR(200) NOT NULL,
-                  [Description] NVARCHAR(MAX) NULL
-                );
 
-                CREATE INDEX IX_Product_ModelId ON dbo.Product(ModelId);
-                CREATE INDEX IX_Product_IsDeleted     ON dbo.Product(IsDeleted);
-            ");
             SQLs.Add(@"
                 CREATE TABLE dbo.Variant (
                   Id            BIGINT IDENTITY(1,1) CONSTRAINT PK_Variant PRIMARY KEY,
@@ -702,13 +642,8 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   Version       BIGINT    NOT NULL DEFAULT 1,
                   Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
                   IsDeleted     BIT NOT NULL DEFAULT 0,
-                  ProductId     BIGINT NOT NULL
-                      CONSTRAINT FK_Variant_Product
-                      REFERENCES dbo.Product(Id),
-                  [Name]        NVARCHAR(50)  NOT NULL,
-                  SalePrice     DECIMAL(18,2) NOT NULL DEFAULT 0,
-                  Price         DECIMAL(18,2) NOT NULL DEFAULT 0,
-                  Active        BIT NOT NULL DEFAULT 1,
+                  ProductId     BIGINT NOT NULL CONSTRAINT FK_Variant_Product REFERENCES dbo.Product(Id),
+                  [Name]        NVARCHAR(100)  NOT NULL,
                   SortOrder     INT NOT NULL,
                 );
 
@@ -725,12 +660,28 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   Version       BIGINT    NOT NULL DEFAULT 1,
                   Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
                   IsDeleted     BIT NOT NULL DEFAULT 0,
-                  VariantId     BIGINT NOT NULL CONSTRAINT FK_ProductColor_Variant REFERENCES dbo.Variant(Id),
+                  ProductId     BIGINT NOT NULL CONSTRAINT FK_ProductColor_Product REFERENCES dbo.Product(Id),
                   Name          NVARCHAR(500) NOT NULL,
                   Hex           NVARCHAR(16) NOT NULL, 
-                  Sku           NVARCHAR(500) NOT NULL,
                   SortOrder   INT NOT NULL
                 );
+            ");
+            SQLs.Add(@"
+                CREATE TABLE dbo.ProductSku (
+                  Id                  BIGINT IDENTITY(1,1) CONSTRAINT PK_ProductSku PRIMARY KEY,
+                  SearchString  NVARCHAR(MAX) NOT NULL,
+                  CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  RemoveDate    DATETIME2 NULL,
+                  UpdateDate    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  Version       BIGINT    NOT NULL DEFAULT 1,
+                  Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+                  IsDeleted     BIT NOT NULL DEFAULT 0,
+                  ProductId     BIGINT NOT NULL CONSTRAINT FK_ProductSku_Product REFERENCES dbo.Product(Id),
+                  [ProductColorId]     BIGINT NOT NULL CONSTRAINT FK_ProductSku_ProductColor REFERENCES dbo.ProductColor(Id),
+                  [VariantId]   BIGINT NOT NULL CONSTRAINT FK_ProductSku_Variant REFERENCES dbo.Variant(Id),
+                  Sku           NVARCHAR(300) NOT NULL,
+                );
+
             ");
             SQLs.Add(@"
                 CREATE TABLE dbo.Image (
@@ -754,47 +705,6 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
 
                 CREATE INDEX IX_Image_StoredFileId ON dbo.Image(StoredFileId);
                 CREATE INDEX IX_Image_ProductColorId    ON dbo.Image(ProductColorId);
-            ");
-
-            SQLs.Add(@"
-                CREATE TABLE dbo.PropertyGroup (
-                    Id           BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_PropertyGroup PRIMARY KEY,
-                    SearchString  NVARCHAR(MAX) NOT NULL,
-                    CreationDate DATETIME2(3) NOT NULL CONSTRAINT DF_PropertyGroup_CreationDate DEFAULT (SYSUTCDATETIME()),
-                    UpdateDate   DATETIME2(3) NULL,
-                    RemoveDate   DATETIME2(3) NULL,
-                    [Version]    INT NOT NULL CONSTRAINT DF_PropertyGroup_Version DEFAULT (1),
-                    [Guid]       UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_PropertyGroup_Guid DEFAULT (NEWID()),
-                    IsDeleted    BIT NOT NULL CONSTRAINT DF_PropertyGroup_IsDeleted DEFAULT (0),
-                    VariantId BIGINT NOT NULL
-                        CONSTRAINT FK_PropertyGroup_Variant
-                        REFERENCES dbo.Variant(Id),
-                    [Name]       NVARCHAR(150) NOT NULL,
-                    SortOrder    INT NOT NULL
-                );
-
-                CREATE INDEX IX_Property_VariantId ON dbo.PropertyGroup(VariantId);
-            ");
-
-            SQLs.Add(@"
-                CREATE TABLE dbo.Property (
-                  Id            BIGINT IDENTITY(1,1) CONSTRAINT PK_Property PRIMARY KEY,
-                  SearchString  NVARCHAR(MAX) NOT NULL,
-                  CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-                  RemoveDate    DATETIME2 NULL,
-                  UpdateDate    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-                  Version       BIGINT    NOT NULL DEFAULT 1,
-                  Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
-                  IsDeleted     BIT NOT NULL DEFAULT 0,
-                  PropertyGroupId     BIGINT NOT NULL
-                      CONSTRAINT FK_Property_PropertyGroup
-                      REFERENCES dbo.PropertyGroup(Id),
-                  [Field]       NVARCHAR(150)  NOT NULL,
-                  [Value]       NVARCHAR(4000) NOT NULL
-                );
-
-                CREATE INDEX IX_Property_PropertyGroupId ON dbo.Property(PropertyGroupId);
-                CREATE INDEX IX_Property_Field     ON dbo.Property([Field]);
             ");
 
             SQLs.Add(@"
@@ -889,9 +799,7 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                     Version       BIGINT    NOT NULL DEFAULT 1,
                     Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
                     IsDeleted     BIT NOT NULL DEFAULT 0,
-                    ProductId     BIGINT NOT NULL CONSTRAINT FK_Stock_Product REFERENCES dbo.Product(Id),
-                    VariantId     BIGINT NOT NULL CONSTRAINT FK_Stock_Variant REFERENCES dbo.Variant(Id),
-                    ProductColorId       BIGINT NOT NULL CONSTRAINT FK_Stock_ProductColor REFERENCES dbo.ProductColor(Id),
+                    ProductSkuId  BIGINT NOT NULL CONSTRAINT FK_Stock_ProductSku REFERENCES dbo.ProductSku(Id),
                     LocationId    BIGINT NOT NULL CONSTRAINT FK_Stock_Location REFERENCES dbo.Location(Id),
                     Physical      BIGINT   NOT NULL,
                     Reserved      BIGINT   NOT NULL,
@@ -901,10 +809,8 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                     Maximum       BIGINT   NOT NULL
                 );
 
-                CREATE INDEX IX_Stock_ProductId     ON dbo.Stock(ProductId);
-                CREATE INDEX IX_Stock_VariantId     ON dbo.Stock(VariantId);
-                CREATE INDEX IX_Stock_ProductColorId       ON dbo.Stock(ProductColorId);
-                CREATE INDEX IX_Stock_LocationId    ON dbo.Stock(LocationId);
+                CREATE INDEX IX_Stock_ProductSkuId      ON dbo.Stock(ProductSkuId);
+                CREATE INDEX IX_Stock_LocationId        ON dbo.Stock(LocationId);
             ");
 
             SQLs.Add(@"
@@ -985,6 +891,22 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
             ");
 
             SQLs.Add(@"
+                CREATE TABLE dbo.LogisticsProvider (
+                  Id            BIGINT IDENTITY(1,1) CONSTRAINT PK_LogisticsProvider PRIMARY KEY,
+                  SearchString  NVARCHAR(MAX) NOT NULL,
+                  Code          NVARCHAR(64)  NOT NULL,
+                  CreationDate  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  RemoveDate    DATETIME2 NULL,
+                  UpdateDate    DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  Version       BIGINT    NOT NULL DEFAULT 1,
+                  Guid          UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+                  IsDeleted     BIT NOT NULL DEFAULT 0,
+                  Name          NVARCHAR(200) NOT NULL,
+                  IsInHouse     BIT NOT NULL DEFAULT 0,
+                );
+            ");
+
+            SQLs.Add(@"
                 CREATE TABLE dbo.Driver (
                   Id            BIGINT IDENTITY(1,1) CONSTRAINT PK_Driver PRIMARY KEY,
                   SearchString  NVARCHAR(MAX) NOT NULL,
@@ -1034,6 +956,8 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   Version               BIGINT    NOT NULL DEFAULT 1,
                   Guid                  UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
                   IsDeleted             BIT NOT NULL DEFAULT 0,
+                  IsPrinted             BIT NOT NULL DEFAULT 0,
+                  IsReverseLogistics    BIT NOT NULL DEFAULT 0,
                   Identifier            NVARCHAR(MAX) NOT NULL,
                   Number                BIGINT DEFAULT NEXT VALUE FOR SaleNumberSeq,
                   ArcaNumber            NVARCHAR(30) NULL,
@@ -1056,7 +980,8 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   TaxStatusId           BIGINT NULL CONSTRAINT FK_Sale_TaxStatus REFERENCES dbo.TaxStatus(Id),
                   OriginSaleId          BIGINT NOT NULL CONSTRAINT FK_Sale_OriginSale REFERENCES dbo.OriginSale(Id),
                   PdfInvoiceId          BIGINT NULL CONSTRAINT FK_Sale_StoredFile REFERENCES dbo.StoredFile(Id),
-                  CityId                BIGINT NOT NULL CONSTRAINT FK_Sale_City REFERENCES dbo.City(Id),
+                  CityId                BIGINT NULL CONSTRAINT FK_Sale_City REFERENCES dbo.City(Id),
+                  LogisticsProviderId   BIGINT NULL CONSTRAINT FK_Sale_LogisticsProvider REFERENCES dbo.LogisticsProvider(Id),
                   State                 NVARCHAR(100) NOT NULL,
                   Latitude              DECIMAL(10,7) NULL,
                   Longitude             DECIMAL(10,7) NULL
@@ -1075,12 +1000,31 @@ namespace ICR.DatabaseMigrations.Deployments._1_0_0
                   IsDeleted         BIT NOT NULL DEFAULT 0,
                   SaleId            BIGINT NOT NULL CONSTRAINT FK_SaleDetail_Sale REFERENCES dbo.Sale(Id),
                   ProductId         BIGINT NOT NULL CONSTRAINT FK_SaleDetail_Product REFERENCES dbo.Product(Id),
-                  VariantId         BIGINT NOT NULL CONSTRAINT FK_SaleDetail_Variant REFERENCES dbo.Variant(Id),
-                  ProductColorId    BIGINT NOT NULL CONSTRAINT FK_SaleDetail_ProductColor REFERENCES dbo.ProductColor(Id),
+                  ProductSkuId      BIGINT NOT NULL CONSTRAINT FK_SaleDetail_ProductSku REFERENCES dbo.ProductSku(Id),
                   StockId           BIGINT NULL CONSTRAINT FK_SaleDetail_Stock REFERENCES dbo.Stock(Id),
                   Count             INT NOT NULL,
                   Price             DECIMAL(18,2) NOT NULL,
-                  IsExtra           BIT NOT NULL
+                  IsExchangeItem    BIT NOT NULL
+                );
+            ");
+
+            SQLs.Add(@"
+                CREATE SEQUENCE ReturnOrderNumberSeq START WITH 1 INCREMENT BY 1;
+
+
+                CREATE TABLE dbo.ReturnOrder (
+                  Id                    BIGINT IDENTITY(1,1) CONSTRAINT PK_ReturnOrder PRIMARY KEY,
+                  SearchString          NVARCHAR(MAX) NOT NULL,
+                  CreationDate          DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  RemoveDate            DATETIME2 NULL,
+                  UpdateDate            DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                  Version               BIGINT    NOT NULL DEFAULT 1,
+                  Guid                  UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+                  IsDeleted             BIT NOT NULL DEFAULT 0,
+                  Number                BIGINT DEFAULT NEXT VALUE FOR ReturnOrderNumberSeq,
+                  ReturnDate            DATETIME2 NULL,
+                  SaleId                BIGINT NULL CONSTRAINT FK_ReturnOrder_Sale REFERENCES dbo.Sale(Id),
+                  State                 NVARCHAR(100) NOT NULL
                 );
             ");
 

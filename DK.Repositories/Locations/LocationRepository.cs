@@ -1,10 +1,7 @@
 ﻿using Dakali.Interface.Connection;
 using Dapper;
 using DK.Domain.Locations;
-using DK.Domain.Products;
 using DK.Repositories.Interface.Base;
-using DK.Repositories.Products;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -142,12 +139,11 @@ namespace DK.Repositories.Locations
                     SearchString = @SearchString,
                     UpdateDate = SYSUTCDATETIME(),
                     Version = Version + 1
-                OUTPUT INSERTED.*
                 WHERE Id = @Id AND IsDeleted = 0;
             ";
 
             entity.SearchString = entity.ToString();
-            await _session.Connection.QuerySingleAsync<Model>(query, new
+            await _session.Connection.QuerySingleAsync(query, new
             {
                 entity.Id,
                 LocationStateId = entity.State.Id,

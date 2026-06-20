@@ -1,6 +1,7 @@
 ﻿using DK.Process.GeographicLocation;
 using DK.Process.Locations;
 using DK.Process.Product;
+using DK.Process.ReturnOrders;
 using DK.Process.RoadMaps;
 using DK.Process.Sales;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,8 +13,8 @@ namespace DK.Process
         public static void Configure(IServiceCollection service)
         {
             service.AddScoped<CategoryProcess>();
-            service.AddScoped<ModelProcess>();
             service.AddScoped<ProductProcess>();
+            service.AddScoped<ProductSkuProcess>();
             service.AddScoped<StockProcess>();
             service.AddScoped<HallwayProcess>();
             service.AddScoped<ColumnProcess>();
@@ -31,6 +32,8 @@ namespace DK.Process
             service.AddScoped<RoadMapProcess>();
             service.AddScoped<RoadMapSaleProcess>();
             service.AddScoped<HistoricSaleProcess>();
+            service.AddScoped<LogisticsProviderProcess>();
+            service.AddScoped<ReturnOrderProcess>();
         }
     }
 }

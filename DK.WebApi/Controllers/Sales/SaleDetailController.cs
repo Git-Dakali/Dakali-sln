@@ -39,7 +39,7 @@ namespace DK.WebApi.Controllers.Sales
             var sale = await _saleProcess.Get(idSale, cancellation);
             var detail = await _saleDetailProcess.Create(sale, _mapper.Map<SaleDetail>(saleDetailRequest), cancellation);
             var state = await _locationStateProcess.Get("DIS", cancellation);
-            var stock = await _stockProcess.Reserve(state, detail.Product, detail.Variant, detail.Color, detail.Count);
+            var stock = await _stockProcess.Reserve(state, detail.Product, detail.ProductSku, detail.Count);
             await _saleDetailProcess.AssignStock(sale, detail, stock, cancellation);
         }
 

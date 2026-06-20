@@ -3,6 +3,7 @@ using DK.Domain.Products;
 using DK.Repositories.Locations;
 using DK.Repositories.Products;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,8 +26,7 @@ namespace DK.Validator
         public async Task Create(Stock stock, CancellationToken cancellationToken = default)
         {
             await Product(stock, cancellationToken);
-            await Variant(stock, cancellationToken);
-            await Color(stock, cancellationToken);
+            await ProductSku(stock, cancellationToken);
             await Physical(stock, cancellationToken);
             await Reserved(stock, cancellationToken);
             await Free(stock, cancellationToken);
@@ -34,18 +34,42 @@ namespace DK.Validator
             await Maximum(stock, cancellationToken);
             await Location(stock, cancellationToken);
 
-            var stockPersisted = await _stockRepository.Get(stock.Product, stock.Variant, stock.Color, stock.Location, cancellationToken);
+            var stockPersisted = await _stockRepository.Get(stock.ProductSku, stock.Location, cancellationToken);
 
             if (stockPersisted is null)
                 return;
 
-            throw new Exception($"El Stock {stock.Product.Name}-{stock.Variant.Name}-{stock.Color.Name} ya existe para la ubicacion {stock.Location.Hallway.Name}-{stock.Location.Column.Name}-{stock.Location.Level.Name}");
+            throw new Exception($"El Stock {stock.ProductSku.Product.Name}-{stock.ProductSku.Variant.Name}-{stock.ProductSku.Color.Name} ya existe para la ubicacion {stock.Location.Hallway.Name}-{stock.Location.Column.Name}-{stock.Location.Level.Name}");
+        }
+
+        public async Task Recount(List<Stock> stocks, CancellationToken cancellationToken = default)
+        {
+            var firstStock = stocks.First();
+            if (stocks.Any(s => s.Location.Id != firstStock.Location.Id))
+                throw new Exception("Existe ubicaciones distintas.");
+
+            foreach (var stock in stocks)
+            {
+                await Product(stock, cancellationToken);
+                await ProductSku(stock, cancellationToken);
+                await Physical(stock, cancellationToken);
+                await Reserved(stock, cancellationToken);
+                await Free(stock, cancellationToken);
+                await Minimum(stock, cancellationToken);
+                await Maximum(stock, cancellationToken);
+                await Location(stock, cancellationToken);
+
+                var count = stocks.Count(x => x.ProductSku.Id == stock.ProductSku.Id && x.Location.Id == stock.Location.Id);
+
+                if (count > 1)
+                    throw new Exception($"El Stock {stock.ProductSku.Product.Name}-{stock.ProductSku.Variant.Name}-{stock.ProductSku.Color.Name} ya existe para la ubicacion {stock.Location.Hallway.Name}-{stock.Location.Column.Name}-{stock.Location.Level.Name}");        
+            }
         }
 
         public async Task StockEntry(Stock stock, int amount, CancellationToken cancellationToken = default)
         {
             if (!(await Exist(stock, cancellationToken)))
-                throw new Exception($"No existe el stock {stock.Product.Name}-{stock.Variant.Name}-{stock.Color.Name}");
+                throw new Exception($"No existe el stock {stock.ProductSku.Product.Name}-{stock.ProductSku.Variant.Name}-{stock.ProductSku.Color.Name}");
 
             if (amount <= 0)
                 throw new Exception($"De ingresar una cantidad.");
@@ -54,7 +78,7 @@ namespace DK.Validator
         public async Task Delete(Stock stock, CancellationToken cancellationToken = default)
         {
             if (!(await Exist(stock, cancellationToken)))
-                throw new Exception($"No existe el stock {stock.Product.Name}-{stock.Variant.Name}-{stock.Color.Name}");
+                throw new Exception($"No existe el stock {stock.ProductSku.Product.Name}-{stock.ProductSku.Variant.Name}-{stock.ProductSku.Color.Name}");
 
         }
 
@@ -65,52 +89,19 @@ namespace DK.Validator
 
         public async Task Product(Stock stock, CancellationToken cancellationToken = default)
         {
-            if (stock.Product is null)
+            if (stock.ProductSku.Product is null)
                 throw new Exception("Producto vacio.");
 
-            var productPersisted = await _productRepository.Get(stock.Product.Id, cancellationToken);
+            var productPersisted = await _productRepository.Get(stock.ProductSku.Product.Id, cancellationToken);
 
             if (productPersisted is null)
-                throw new Exception($"El producto {stock.Product.Name} no existe.");
+                throw new Exception($"El producto {stock.ProductSku.Product.Name} no existe.");
         }
 
-        public async Task Variant(Stock stock, CancellationToken cancellationToken = default)
+        public async Task ProductSku(Stock stock, CancellationToken cancellationToken = default)
         {
-            if (stock.Variant is null)
-                throw new Exception("Variante vacio.");
-
-            if (stock.Product is null)
-                return;
-
-            var productPersisted = await _productRepository.Get(stock.Product.Id, cancellationToken);
-
-            if (productPersisted is null)
-                return;
-
-            if (!productPersisted.Variants.Any(v => v.Id == stock.Variant.Id))
-                throw new Exception($"La variante {stock.Variant.Name} no existe para el producto {stock.Product.Name}");
-        }
-
-        public async Task Color(Stock stock, CancellationToken cancellationToken = default)
-        {
-            if (stock.Color is null)
-                throw new Exception("El color vacio.");
-
-            if (stock.Product is null || stock.Variant is null)
-                return;
-
-            var productPersisted = await _productRepository.Get(stock.Product.Id, cancellationToken);
-
-            if (productPersisted is null)
-                return;
-
-            var variant = productPersisted.Variants.SingleOrDefault(v => v.Id == stock.Variant.Id);
-
-            if (variant is null)
-                return;
-
-            if (!variant.ColorsHex.Any(c => c.Id == stock.Color.Id))
-                throw new Exception($"La variante {stock.Variant.Name} no existe para el producto {stock.Product.Name}");
+            if (stock.ProductSku is null)
+                throw new Exception("Debe cargar un producto.");
         }
 
         public async Task Physical(Stock stock, CancellationToken cancellationToken = default)
@@ -156,23 +147,21 @@ namespace DK.Validator
 
         }
 
-        public async Task Reserve(LocationState state, Product product, Variant variant, ProductColor color, long freeCount, CancellationToken cancellation = default)
+        public async Task Reserve(LocationState state, Product product, ProductSku productSku, long freeCount, CancellationToken cancellation = default)
         {
             if (state == null)
                 throw new Exception("El estado de la ubicacion esta vacio.");
             if (product == null)
                 throw new Exception("El producto esta vacio.");
-            if (variant == null)
-                throw new Exception("La variante esta vacio.");
-            if (color == null)
-                throw new Exception("El color esta vacio.");
+            if (productSku == null)
+                throw new Exception("El producto esta vacio.");
             if (freeCount <= 0)
                 throw new Exception("La cantidad a reservar del stock debe ser mayor a cero");
 
-            var stock = await _stockRepository.Get(state, product, variant, color, freeCount, cancellation);
+            var stock = await _stockRepository.Get(state, productSku, freeCount, cancellation);
 
             if (stock is null)
-                throw new Exception($"No existe un stock libre para el producto {product.Name}-{variant.Name}-{color.Name} con cantidad {freeCount} en estado {state.Name}");
+                throw new Exception($"No existe un stock libre para el producto {product.Name}-{productSku.Variant.Name}-{productSku.Color.Name} con cantidad {freeCount} en estado {state.Name}");
         }
 
         public async Task CancelReserved(Stock stock, long count, CancellationToken cancellation = default)
@@ -186,7 +175,7 @@ namespace DK.Validator
             var stockPersisted = await _stockRepository.Get(stock.Id, cancellation);
 
             if (stockPersisted is null)
-                throw new Exception($"No existe un stock para el producto {stock.Product?.Name}-{stock.Variant?.Name}-{stock.Color?.Name} con cantidad {count} en estado {stock.Location?.State?.Name}");
+                throw new Exception($"No existe un stock para el producto {stock.ProductSku.Product?.Name}-{stock.ProductSku.Variant?.Name}-{stock.ProductSku.Color?.Name} con cantidad {count} en estado {stock.Location?.State?.Name}");
         }
     }
 }

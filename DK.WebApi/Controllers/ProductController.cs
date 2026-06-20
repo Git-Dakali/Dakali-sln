@@ -3,8 +3,8 @@ using DK.Domain.Products;
 using DK.Domain.Sales;
 using DK.Process.Product;
 using DK.Process.Sales;
-using DK.WebApi.ViewModel;
 using DK.WebApi.ViewModel.Base;
+using DK.WebApi.ViewModel.Products;
 using DK.WebApi.ViewModel.Sales;
 using Microsoft.AspNetCore.Mvc;
 
@@ -43,7 +43,6 @@ namespace DK.WebApi.Controllers
             var product = await _productProcess.Get(id);
             return _mapper.Map<ProductResponse>(product);
         }
-
 
         [HttpPost("Create")]
         public async Task<ProductResponse> Create([FromBody] ProductRequest data)
